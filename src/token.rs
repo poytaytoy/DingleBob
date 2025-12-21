@@ -1,0 +1,22 @@
+
+#[derive(Debug)]
+pub enum TokenKind {
+    LEFT_PAREN, RIGHT_PAREN, LEFT_BRACE, RIGHT_BRACE,
+    COMMA, DOT, MINUS, PLUS, SEMICOLON, SLASH, STAR, 
+
+    BANG, BANG_EQUAL,
+    EQUAL, EQUAL_EQUAL,
+    GREATER, GREATER_EQUAL,
+    LESS, LESS_EQUAL,
+
+    AND, CLASS, ELSE, FALSE, FOR, IF, NONE, OR,
+    PRINT, RETURN, SUPER, THIS, TRUE, VAR, WHILE,
+
+    FLOAT(f32), 
+    INT(i32), 
+    IDENTIFIER(String),
+    STRING(String),  
+    UNKNOWN(String), 
+
+    EOF 
+}
