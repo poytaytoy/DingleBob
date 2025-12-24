@@ -46,11 +46,13 @@ impl<'a> Scanner<'a> {
             }
         }
 
-        if lexeme.parse::<f32>().is_ok() {
-            self.add_token(TokenKind::NUMBER, lexeme);
-        } else {
-            self.handle_error(&format!("Invalid numeric literal: {}", lexeme));
-        }
+        self.add_token(TokenKind::NUMBER, lexeme);
+
+        // if lexeme.parse::<f32>().is_ok() {
+            
+        // } else {
+        //     self.handle_error(&format!("Invalid numeric literal: {}", lexeme));
+        // }
     }
 
     fn handle_strings(&mut self) {
@@ -70,7 +72,7 @@ impl<'a> Scanner<'a> {
         }
 
         if met_end {
-            let lexeme = format!("\"{}\"", string_content);
+            let lexeme = string_content;
             self.add_token(TokenKind::STRING, lexeme);
         } else {
             self.handle_error("Unterminated string.");

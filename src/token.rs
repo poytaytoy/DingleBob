@@ -1,4 +1,3 @@
-
 #[derive(PartialEq, Debug, Copy, Clone)]
 pub enum TokenKind {
     LEFT_PAREN, RIGHT_PAREN, LEFT_BRACE, RIGHT_BRACE,
@@ -25,3 +24,4 @@ pub struct Token {
     pub lexeme: String, 
     pub line: i32 
 }
+

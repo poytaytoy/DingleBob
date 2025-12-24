@@ -1,6 +1,7 @@
 use crate::token::TokenKind;
 use crate::token::Token; 
 use crate::ast::Expression; 
+use crate::ast::Value;
 use std::process; 
 
 pub struct Parser {
@@ -107,13 +108,32 @@ impl Parser{
 
     fn primary(&mut self)->Expression{
 
-        let type_list = [TokenKind::FALSE, TokenKind::TRUE, TokenKind::NONE, TokenKind::STRING, TokenKind::NUMBER];
+        if (self.atEnd()){
+            self.handle_error("Invalid syntax at end of file");
+        }
 
-        if self.match_token(&type_list){
-            let literal:Token = (&self.tokens_list[self.curr_index - 1]).clone(); 
-            
-            return Expression::Literal(literal);
-        
+        let literal: &Token = &self.tokens_list[self.curr_index]; 
+
+        self.curr_index += 1;
+
+        match &literal.kind {
+            TokenKind::FALSE => return Expression::Literal(Value::Bool(false)),
+            TokenKind::TRUE => return Expression::Literal(Value::Bool(true)),
+            TokenKind::NONE => return Expression::Literal(Value::None),
+            TokenKind::STRING => return Expression::Literal(Value::String(literal.lexeme.clone())),
+            TokenKind::NUMBER => {
+                let mut resulti = literal.lexeme.parse::<i128>(); 
+                let mut resultf = literal.lexeme.parse::<f64>(); 
+
+                if resulti.is_ok() {
+                    return Expression::Literal(Value::Int(resulti.unwrap()));
+                } else if resultf.is_ok() { 
+                    return Expression::Literal(Value::Float(resultf.unwrap()));
+                } else {
+                    self.handle_error(&format!("Invalid numeral with {}", &self.tokens_list[self.curr_index].lexeme));
+                }
+            },
+            _=> {self.curr_index -= 1}
         }
 
         if self.match_token(&[TokenKind::LEFT_PAREN]){
@@ -129,7 +149,7 @@ impl Parser{
 
         self.handle_error(&format!("Invalid syntax with {}", &self.tokens_list[self.curr_index].lexeme));
 
-        return Expression::Literal((&self.tokens_list[self.curr_index]).clone());
+        return Expression::Literal(Value::None);
     }
 
 
