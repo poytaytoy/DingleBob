@@ -4,6 +4,7 @@ use crate::token::TokenKind;
 #[derive(Debug, Clone)]
 
 pub enum Expression {
+    Assign(Token, Box<Expression>),
     Binary(Box<Expression>, Token , Box<Expression>),
     Unary(Token, Box<Expression>), 
     Literal(Value), 
@@ -26,6 +27,7 @@ pub enum Value {
 pub enum Statement {
     Print(Expression),
     Expression(Expression),
-    Declaration(String, Expression)
+    Var(String, Expression), 
+    Block(Box<Vec<Statement>>)
 }
 

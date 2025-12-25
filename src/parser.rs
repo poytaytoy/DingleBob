@@ -4,7 +4,7 @@ use crate::ast::Expression;
 use crate::ast::Value;
 use crate::ast::Statement; 
 use std::process; 
-
+use std::mem;
 pub struct Parser {
     tokens_list: Vec<Token>,
     curr_index: usize, 
@@ -28,7 +28,7 @@ impl Parser{
         let mut statement_list = Vec::new(); 
         
         while !(self.atEnd()) {
-            statement_list.push(self.statement());
+            statement_list.push(self.declaration());
         }
 
         return statement_list; 
@@ -46,7 +46,7 @@ impl Parser{
     fn varDeclaration(&mut self) -> Statement{
         
         if self.check(TokenKind::IDENTIFIER){
-            let token: Token = &self.tokens_list[self.curr_index];
+            let token: Token = (&self.tokens_list[self.curr_index]).clone();
             self.curr_index += 1; 
 
             if self.match_token(&[TokenKind::EQUAL]){
@@ -55,7 +55,7 @@ impl Parser{
                 if self.check(TokenKind::SEMICOLON){
                     self.curr_index += 1; 
 
-                    return Statement::Declaration(token.lexeme.clone(), expr)
+                    return Statement::Var(token.lexeme.clone(), expr)
                 }
 
                 self.handle_error("Expect ';' after variable declaration");
@@ -66,16 +66,18 @@ impl Parser{
 
         self.handle_error("Expect variable name after declaration"); 
 
-        Statement::Declaration(String::from("_"), Expression::Literal(Value::None)) 
+        Statement::Var(String::from("_"), Expression::Literal(Value::None)) 
     }
 
     fn statement(&mut self) -> Statement{
 
         if (self.match_token(&[TokenKind::PRINT])){
             return self.printStatement(); 
+        } else if self.match_token(&[TokenKind::LEFT_BRACE]){
+            return self.block(); 
         }
 
-        return self.printStatement(); //return self.expressionStatement();
+       return self.expressionStatement();
     }
 
     fn printStatement(&mut self) -> Statement {
@@ -91,9 +93,59 @@ impl Parser{
         return Statement::Print(expr); 
     }
 
+    fn expressionStatement(&mut self) -> Statement {
+
+        let expr = self.expression(); 
+
+        if self.check(TokenKind::SEMICOLON) {
+            self.curr_index += 1; 
+        } else {
+            self.handle_error("Expect ';' after end of expression");
+        }
+
+        return Statement::Expression(expr); 
+    }
+
+    fn block(&mut self) -> Statement{
+
+        let mut statement = Vec::new(); 
+
+        while !(self.check(TokenKind::RIGHT_BRACE)) && !self.atEnd(){
+            statement.push(self.declaration()); 
+        }
+
+        if (self.check(TokenKind::RIGHT_BRACE)){
+            self.curr_index += 1; 
+            return Statement::Block(Box::new(statement)); 
+        }
+        
+        self.handle_error("Expected '}' after end of block");
+        Statement::Block(Box::new(statement))
+    }
 
     fn expression(&mut self) -> Expression{
-        return self.equality(); 
+        return self.assignment(); 
+    }
+
+    fn assignment(&mut self) -> Expression{ 
+        let expr = self.equality(); 
+
+        if self.check(TokenKind::EQUAL){
+            self.curr_index += 1;
+            let mut value = self.expression(); 
+
+            if matches!(expr, Expression::Variable(_)) {
+                let Expression::Variable(token)= expr else {
+                    unreachable!(); 
+                }; 
+
+                return Expression::Assign(token, Box::new(value)); 
+            }
+
+            self.handle_error("Invalid assignment target");
+        }
+
+        return expr; 
     }
 
     fn equality(&mut self) -> Expression{

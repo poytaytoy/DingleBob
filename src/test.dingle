@@ -1,3 +1,7 @@
-print 69;
-print "bob"; 
-print true; 
+let a = none; 
+
+{
+    a = 1; 
+
+    print a; 
+}

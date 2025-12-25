@@ -19,13 +19,15 @@ use parser::Parser;
 mod interpreter; 
 use interpreter::Interpreter; 
 
+mod environment;
+
 //TODO Things to look into 
 //1. lifetimes how the <'a> work and what the fuck is going on with them 
 //2. how crates and libs work in rust  
 
 fn main() -> io::Result<()> {
 
-    println!("Dinglebob"); 
+    println!("Dinglebob Interpreter"); 
 
     //*This is to use it as a parser */
 
@@ -53,9 +55,12 @@ fn main() -> io::Result<()> {
 
     let mut token_list= scan(&contents, false);
     let mut parse = Parser::new(token_list);
+      
+    let mut parsed = parse.parse();
+   
     let mut interpret = Interpreter::new();
 
-    interpret.interpret(parse.parse());
+    interpret.interpret(parsed);
 
 
     // let mut input = String::from("+ - 123.5 12 hello = \"poop\" 0..3 #1 2 3111 \n hello while != !  e");

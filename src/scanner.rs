@@ -111,6 +111,7 @@ impl<'a> Scanner<'a> {
             "true" => TokenKind::TRUE,
             "let" => TokenKind::LET,
             "while" => TokenKind::WHILE,
+            "define" => TokenKind::DEFINE,
             _ => TokenKind::IDENTIFIER,
         };
         
