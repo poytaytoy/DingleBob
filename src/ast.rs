@@ -8,6 +8,7 @@ pub enum Expression {
     Unary(Token, Box<Expression>), 
     Literal(Value), 
     Grouping(Box<Expression>),
+    Variable(Token)
 }
 
 #[derive(Debug, Clone)]
@@ -20,7 +21,11 @@ pub enum Value {
     None
 }
 
+#[derive(Debug, Clone)]
 
-
-
+pub enum Statement {
+    Print(Expression),
+    Expression(Expression),
+    Declaration(String, Expression)
+}
 

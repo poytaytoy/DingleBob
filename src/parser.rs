@@ -2,21 +2,20 @@ use crate::token::TokenKind;
 use crate::token::Token; 
 use crate::ast::Expression; 
 use crate::ast::Value;
+use crate::ast::Statement; 
 use std::process; 
 
 pub struct Parser {
     tokens_list: Vec<Token>,
     curr_index: usize, 
-
 }
 
 impl Parser{
 
     pub fn new(tokens_list: Vec<Token>) -> Self{
-        
         Parser{
             tokens_list: tokens_list, 
-            curr_index: 0
+            curr_index: 0,
         }
     }
 
@@ -24,7 +23,76 @@ impl Parser{
         (&self.tokens_list[self.curr_index]).kind == TokenKind::EOF
     }
 
-    pub fn expression(&mut self) -> Expression{
+    pub fn parse(&mut self) -> Vec<Statement> {
+
+        let mut statement_list = Vec::new(); 
+        
+        while !(self.atEnd()) {
+            statement_list.push(self.statement());
+        }
+
+        return statement_list; 
+    }
+
+    fn declaration(&mut self) -> Statement{ 
+
+        if self.match_token(&[TokenKind::LET]){
+            return self.varDeclaration(); 
+        }
+
+        return self.statement();
+    }
+
+    fn varDeclaration(&mut self) -> Statement{
+        
+        if self.check(TokenKind::IDENTIFIER){
+            let token: Token = &self.tokens_list[self.curr_index];
+            self.curr_index += 1; 
+
+            if self.match_token(&[TokenKind::EQUAL]){
+                let expr = self.expression(); 
+
+                if self.check(TokenKind::SEMICOLON){
+                    self.curr_index += 1; 
+
+                    return Statement::Declaration(token.lexeme.clone(), expr)
+                }
+
+                self.handle_error("Expect ';' after variable declaration");
+            }
+
+            self.handle_error("Expect '=' after variable declaration");
+        }
+
+        self.handle_error("Expect variable name after declaration"); 
+
+        Statement::Declaration(String::from("_"), Expression::Literal(Value::None)) 
+    }
+
+    fn statement(&mut self) -> Statement{
+
+        if (self.match_token(&[TokenKind::PRINT])){
+            return self.printStatement(); 
+        }
+
+        return self.printStatement(); //return self.expressionStatement();
+    }
+
+    fn printStatement(&mut self) -> Statement {
+
+        let expr = self.expression(); 
+
+        if self.check(TokenKind::SEMICOLON) {
+            self.curr_index += 1; 
+        } else {
+            self.handle_error("Expect ';' after end of expression");
+        }
+
+        return Statement::Print(expr); 
+    }
+
+
+    fn expression(&mut self) -> Expression{
         return self.equality(); 
     }
 
@@ -132,7 +200,8 @@ impl Parser{
                 } else {
                     self.handle_error(&format!("Invalid numeral with {}", &self.tokens_list[self.curr_index].lexeme));
                 }
-            },
+            }
+            TokenKind::IDENTIFIER => return Expression::Variable(literal.clone()),
             _=> {self.curr_index -= 1}
         }
 

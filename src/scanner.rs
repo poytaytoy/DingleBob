@@ -3,6 +3,10 @@ use crate::token::TokenKind;
 use std::str::Chars;
 use std::process; 
 
+
+//TODO figure out what the fuck is the lifetimes doing 
+//TODO also figure out what the hell gets borrowed and copy -> like what the fuck is the copy thing doing 
+
 struct Scanner<'a> {
     curr_input: Chars<'a>,
     token_list: Vec<Token>,
@@ -105,7 +109,7 @@ impl<'a> Scanner<'a> {
             "super" => TokenKind::SUPER,
             "this" => TokenKind::THIS,
             "true" => TokenKind::TRUE,
-            "var" => TokenKind::VAR,
+            "let" => TokenKind::LET,
             "while" => TokenKind::WHILE,
             _ => TokenKind::IDENTIFIER,
         };

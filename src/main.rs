@@ -18,7 +18,6 @@ use parser::Parser;
 
 mod interpreter; 
 use interpreter::Interpreter; 
-use interpreter::InterpretExpression;
 
 //TODO Things to look into 
 //1. lifetimes how the <'a> work and what the fuck is going on with them 
@@ -56,7 +55,8 @@ fn main() -> io::Result<()> {
     let mut parse = Parser::new(token_list);
     let mut interpret = Interpreter::new();
 
-    println!("{:?}", interpret.evaluate(parse.expression()));
+    interpret.interpret(parse.parse());
+
 
     // let mut input = String::from("+ - 123.5 12 hello = \"poop\" 0..3 #1 2 3111 \n hello while != !  e");
     // let mut scan = Scanner::new(&input); 
