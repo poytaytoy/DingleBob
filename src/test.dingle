@@ -1,17 +1,7 @@
-let a = 1; 
-let b = 2; 
+let a = 0;
+let b = 0;
 
-if 0 and 1 {
-    a = a - 1;
-    b = b - 1; 
-} else {
-    b = b + 1;
-    a = a + 1;
+for (let i = 0; i < 100; i = i + 1){
+    print i; 
 }
 
-print 0 and 1; 
-print 1 and 2; 
-print a; 
-
-print "hi" or 2; #"hi".
-print none or "yes"; #"yes".

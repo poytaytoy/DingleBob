@@ -26,10 +26,11 @@ pub enum Value {
 #[derive(Debug, Clone)]
 
 pub enum Statement {
-    Var(String, Expression), 
+    Var(String, Expression),
+    Expression(Expression), 
     If(Expression, Box<Statement>, Box<Statement>), //For the case of no else, just set to some useless expression. 
     Print(Expression),
-    Expression(Expression),
+    While(Expression, Box<Statement>),
     Block(Box<Vec<Statement>>)
 }
 

@@ -64,6 +64,11 @@ impl Parser{
                 self.handle_error("Expect ';' after variable declaration");
             }
 
+            if self.check(TokenKind::SEMICOLON){
+                self.curr_index += 1; 
+                return Statement::Var(token.lexeme.clone(), Expression::Literal(Value::None));
+            }
+
             self.handle_error("Expect '=' after variable declaration");
         }
 
@@ -74,21 +79,101 @@ impl Parser{
 
     fn statement(&mut self) -> Statement{
 
-        if self.check(TokenKind::IF){
+        if self.check(TokenKind::FOR){
+            self.curr_index += 1;
+            return self.forStatement(); 
+        }
+        else if self.check(TokenKind::IF){
             self.curr_index += 1;
             return self.ifStatement(); 
         }
         else if self.check(TokenKind::PRINT){
             self.curr_index += 1; 
             return self.printStatement(); 
-
-        } else if self.check(TokenKind::LEFT_BRACE){
+        } 
+        else if self.check(TokenKind::WHILE){
+            self.curr_index += 1; 
+            return self.whileStatement(); 
+        } 
+        else if self.check(TokenKind::LEFT_BRACE){
             self.curr_index += 1; 
             return self.block(); 
-
         } 
 
        return self.expressionStatement();
+    }
+
+    fn forStatement(&mut self) -> Statement{
+        if !self.check(TokenKind::LEFT_PAREN) {
+            self.handle_error("Expect '(' after 'for' ");
+        }
+
+        self.curr_index += 1; 
+
+        let mut intializer: Option<Statement>;
+        if self.check(TokenKind::SEMICOLON){
+            self.curr_index += 1; 
+            //idk what to do for the none case
+            intializer = None; 
+        } else if self.check(TokenKind::LET)  {
+            self.curr_index += 1; 
+            intializer = Some(self.varDeclaration());
+        } else {
+            intializer = Some(self.expressionStatement());
+        }
+
+        let mut condition = None; 
+        if !(self.check(TokenKind::SEMICOLON)){
+            condition = Some(self.expression()); 
+        }
+        if !(self.check(TokenKind::SEMICOLON)){
+           self.handle_error("Expect ';' after loop condition");
+        }
+
+        self.curr_index += 1; 
+
+        let mut increment = None; 
+        if !(self.check(TokenKind::RIGHT_PAREN)){
+            increment = Some(self.expression()); 
+        }
+
+        if !(self.check(TokenKind::RIGHT_PAREN)){
+            self.handle_error("Expect ')' after for clauses");
+        }
+
+        self.curr_index += 1; 
+
+        let mut body = self.statement(); 
+
+        if !matches!(body, Statement::Block(_)){
+            self.handle_error("Expect a scope '{ }' after 'for(....)'");
+        }
+
+        if !(increment.is_none()) {
+
+            let mut s_array = Vec::new(); 
+            s_array.push(body); 
+            s_array.push(Statement::Expression(increment.unwrap()));
+
+            body = Statement::Block(Box::new(s_array));
+        }
+
+        if condition.is_none(){
+            condition = Some(Expression::Literal(Value::Bool(true)));
+        }
+
+        body = Statement::While(condition.unwrap(), Box::new(body));
+
+        if !(intializer.is_none()){
+
+            let mut s_array = Vec::new(); 
+            s_array.push(intializer.unwrap()); 
+            s_array.push(body); 
+
+            body = Statement::Block(Box::new(s_array));
+        }
+
+        return body; 
     }
 
     fn ifStatement(&mut self) -> Statement{ 
@@ -125,6 +210,18 @@ impl Parser{
         }
 
         return Statement::Print(expr); 
+    }
+
+    fn whileStatement(&mut self) -> Statement {
+
+        let expr = self.expression(); 
+        let statement = self.statement(); 
+
+        if !matches!(statement, Statement::Block(_)){
+            self.handle_error("Expect a scope after declaring 'while'");
+        }
+
+        Statement::While(expr, Box::new(statement))
     }
 
     fn expressionStatement(&mut self) -> Statement {
@@ -264,7 +361,7 @@ impl Parser{
 
         let mut expr: Expression  = self.unary();
 
-        let type_list = [TokenKind::SLASH, TokenKind::STAR];
+        let type_list = [TokenKind::SLASH, TokenKind::STAR, TokenKind::PERCENT];
 
         while (self.match_token(&type_list)){
             let operator: Token  = (&self.tokens_list[self.curr_index - 1]).clone();

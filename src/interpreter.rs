@@ -39,7 +39,9 @@ impl Interpreter {
             Statement::If(exp, then_s, else_s) => {self.execute_if(exp, *then_s, *else_s)},
             Statement::Print(exp) => {self.execute_print(exp)},     
             Statement::Var(var, value) => {self.execute_var(var, value)},
-            Statement::Block(statements) => {self.execute_block(*statements)}   
+            Statement::Block(statements) => {self.execute_block(*statements)},
+            Statement::While(exp, s) => {self.execute_while(exp, *s)}   
+            
         };
     }
 
@@ -60,6 +62,7 @@ impl Interpreter {
                     true
                 }
             },
+            Value::None => {false},
             _=> {true}
         }
     }
@@ -102,6 +105,18 @@ impl Interpreter {
 
         self.global_environment = curr_env;
         
+    }
+
+    fn execute_while(&mut self, exp: Expression, s: Statement){
+
+        let mut exp_ev = self.evaluate(exp.clone()); 
+
+        //TODO ngl, this cloning thing feels really awkward, might be worth checking this up once all is done
+
+        while self.to_bool(&exp_ev){
+            self.execute(s.clone());
+            exp_ev = self.evaluate(exp.clone()); 
+        }
     }
 
     fn evaluate(&mut self, expression: Expression) -> Value{
@@ -167,6 +182,54 @@ impl Interpreter {
                 }
             },
 
+            TokenKind::SLASH => match (l_ev, r_ev) {
+                (Value::Int(m), Value::Int(n)) => {
+                    if n == 0 {
+                        self.handle_error(&format!("Division by 0"), o.line);
+                        Value::None
+                    } else {
+                        Value::Int(m / n)
+                    }
+                }
+                (Value::Float(m), Value::Float(n)) => {
+                    if n == 0.0 {
+                        self.handle_error(&format!("Division by 0"), o.line);
+                        Value::None
+                    } else {
+                        Value::Float(m / n)
+                    }
+                }
+                (Value::Int(m), Value::Float(n)) => {
+                    if n == 0.0 {
+                        self.handle_error(&format!("Division by 0"), o.line);
+                        Value::None
+                    } else {
+                        Value::Float((m as f64) / n)
+                    }
+                }
+                (Value::Float(m), Value::Int(n)) => {
+                    if n == 0 {
+                        self.handle_error(&format!("Division by 0"), o.line);
+                        Value::None
+                    } else {
+                        Value::Float(m / (n as f64))
+                    }
+                }
+                _ => {
+                    self.handle_error(&format!("Invalid operation performed with '/'"), o.line);
+                    Value::None
+                }
+            },
+             TokenKind::PERCENT => match (l_ev, r_ev) {
+                (Value::Int(m), Value::Int(n)) => Value::Int(m % n),
+                (Value::Float(m), Value::Float(n)) => Value::Float(m % n),
+                (Value::Int(m), Value::Float(n)) => Value::Float((m as f64) % n),
+                (Value::Float(m), Value::Int(n)) => Value::Float(m % (n as f64)),
+                _ => {
+                    self.handle_error(&format!("Invalid operation performed with '%'"), o.line);
+                    Value::None
+                }
+            },
             TokenKind::SLASH => match (l_ev, r_ev) {
                 (Value::Int(m), Value::Int(n)) => {
                     if n == 0 {
