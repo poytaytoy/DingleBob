@@ -35,11 +35,44 @@ impl Interpreter {
 
     fn execute(&mut self, stmt:Statement){
         match stmt {
+            Statement::Expression(exp)=> {self.evaluate(exp);}
+            Statement::If(exp, then_s, else_s) => {self.execute_if(exp, *then_s, *else_s)},
             Statement::Print(exp) => {self.execute_print(exp)},     
             Statement::Var(var, value) => {self.execute_var(var, value)},
-            Statement::Block(statements) => {self.execute_block(*statements)}
-            Statement::Expression(exp)=> {self.evaluate(exp);}
+            Statement::Block(statements) => {self.execute_block(*statements)}   
         };
+    }
+
+    fn to_bool(&self, val: &Value) -> bool{
+        match *val { 
+            Value::Bool(t) => {t},
+            Value::Int(n) => {
+                if n == 0 {
+                    false
+                } else{
+                    true
+                }
+            },
+            Value::Float(n) => {
+                if n == 0.0 {
+                    false
+                } else {
+                    true
+                }
+            },
+            _=> {true}
+        }
+    }
+
+    fn execute_if(&mut self, exp: Expression, then_s: Statement, else_s: Statement){
+
+        let val = self.evaluate(exp);
+        
+        if self.to_bool(&val) {
+            self.execute(then_s);
+        } else {
+            self.execute(else_s);
+        }
     }
 
     fn execute_print(&mut self, expression:Expression){
@@ -49,7 +82,7 @@ impl Interpreter {
             Value::Int(m) => {println!("{}", m)},
             Value::Float(m) => {println!("{}", m)},
             Value::Bool(m) => {println!("{}", m)},
-            Value::None => {println!("None")},
+            Value::None => {println!("none")},
             Value::String(m) => {println!("{}", m)}
         }
     }
@@ -78,6 +111,7 @@ impl Interpreter {
             Expression::Binary(l, o, r) => self.evaluate_binary(l, o, r), 
             Expression::Unary(o, r) => self.evaluate_unary(o, r), 
             Expression::Literal(v) => self.evaluate_literal(v),
+            Expression::Logical(l,o ,r ) => self.evaluate_logical(*l, o, *r),
             Expression::Grouping(exp) => self.evaluate_grouping(exp), 
             Expression::Variable(t) => self.evaluate_variable(t)
         }
@@ -271,6 +305,22 @@ impl Interpreter {
         }
 
         return Value::None; 
+    }
+
+    fn evaluate_logical(&mut self, l:Expression, o: Token, r: Expression) -> Value{
+        let l_ev = self.evaluate(l);
+
+        if o.kind == TokenKind::OR {
+            if self.to_bool(&l_ev) {
+                return l_ev; 
+            }
+        } else {
+            if !self.to_bool(&l_ev) {
+                return l_ev; 
+            }
+        }
+
+        return self.evaluate(r);
     }
 
     fn evaluate_literal(&mut self, v: Value) -> Value{

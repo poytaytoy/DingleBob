@@ -7,6 +7,7 @@ pub enum Expression {
     Assign(Token, Box<Expression>),
     Binary(Box<Expression>, Token , Box<Expression>),
     Unary(Token, Box<Expression>), 
+    Logical(Box<Expression>, Token, Box<Expression>),
     Literal(Value), 
     Grouping(Box<Expression>),
     Variable(Token)
@@ -25,9 +26,10 @@ pub enum Value {
 #[derive(Debug, Clone)]
 
 pub enum Statement {
+    Var(String, Expression), 
+    If(Expression, Box<Statement>, Box<Statement>), //For the case of no else, just set to some useless expression. 
     Print(Expression),
     Expression(Expression),
-    Var(String, Expression), 
     Block(Box<Vec<Statement>>)
 }
 

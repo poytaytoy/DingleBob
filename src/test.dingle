@@ -1,7 +1,17 @@
-let a = none; 
+let a = 1; 
+let b = 2; 
 
-{
-    a = 1; 
-
-    print a; 
+if 0 and 1 {
+    a = a - 1;
+    b = b - 1; 
+} else {
+    b = b + 1;
+    a = a + 1;
 }
+
+print 0 and 1; 
+print 1 and 2; 
+print a; 
+
+print "hi" or 2; #"hi".
+print none or "yes"; #"yes".

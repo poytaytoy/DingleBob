@@ -28,7 +28,10 @@ impl Parser{
         let mut statement_list = Vec::new(); 
         
         while !(self.atEnd()) {
-            statement_list.push(self.declaration());
+
+            let dec = self.declaration();
+            //dbg!(&dec);
+            statement_list.push(dec);
         }
 
         return statement_list; 
@@ -71,13 +74,44 @@ impl Parser{
 
     fn statement(&mut self) -> Statement{
 
-        if (self.match_token(&[TokenKind::PRINT])){
-            return self.printStatement(); 
-        } else if self.match_token(&[TokenKind::LEFT_BRACE]){
-            return self.block(); 
+        if self.check(TokenKind::IF){
+            self.curr_index += 1;
+            return self.ifStatement(); 
         }
+        else if self.check(TokenKind::PRINT){
+            self.curr_index += 1; 
+            return self.printStatement(); 
+
+        } else if self.check(TokenKind::LEFT_BRACE){
+            self.curr_index += 1; 
+            return self.block(); 
+
+        } 
 
        return self.expressionStatement();
+    }
+
+    fn ifStatement(&mut self) -> Statement{ 
+        let expr = self.expression(); 
+        let thenStatement = self.statement();
+
+        if !(matches!(thenStatement, Statement::Block(_))){
+            self.handle_error("Expected a scope following 'if'");
+        }
+
+        let mut elseStatement = Statement::Expression(Expression::Literal(Value::None));
+
+        if self.check(TokenKind::ELSE){
+            self.curr_index += 1; 
+            elseStatement = self.statement();
+
+            if !(matches!(elseStatement, Statement::Block(_))){
+                self.handle_error("Expected a scope following 'else'");
+            }
+        }
+
+        return Statement::If(expr, Box::new(thenStatement), Box::new(elseStatement));   
+
     }
 
     fn printStatement(&mut self) -> Statement {
@@ -87,7 +121,7 @@ impl Parser{
         if self.check(TokenKind::SEMICOLON) {
             self.curr_index += 1; 
         } else {
-            self.handle_error("Expect ';' after end of expression");
+            self.handle_error("Expect ';' after end of expression in a print statement");
         }
 
         return Statement::Print(expr); 
@@ -128,7 +162,7 @@ impl Parser{
     }
 
     fn assignment(&mut self) -> Expression{ 
-        let expr = self.equality(); 
+        let expr = self.or(); 
 
         if self.check(TokenKind::EQUAL){
             self.curr_index += 1;
@@ -147,6 +181,36 @@ impl Parser{
 
         return expr; 
     }
+
+    fn or(&mut self) -> Expression{
+        let mut expr = self.and(); 
+        
+        while self.check(TokenKind::OR){
+            let op = (&self.tokens_list[self.curr_index]).clone(); 
+            self.curr_index += 1; 
+            let right = self.equality(); 
+
+            expr = Expression::Logical(Box::new(expr), op, Box::new(right)); 
+        }
+
+        return expr; 
+    }
+
+    fn and(&mut self) -> Expression{
+        let mut expr = self.equality(); 
+
+        while self.check(TokenKind::AND){
+            let op = (&self.tokens_list[self.curr_index]).clone(); 
+            self.curr_index += 1; 
+            let right = self.equality(); 
+
+            expr = Expression::Logical(Box::new(expr), op, Box::new(right)); 
+        }
+
+        return expr; 
+    }
+
+    
 
     fn equality(&mut self) -> Expression{
 
