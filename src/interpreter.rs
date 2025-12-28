@@ -25,11 +25,13 @@ impl Interpreter {
 
     pub fn new(is_prime: bool) -> Self {
 
-        let mut environment = Environment::new(None); 
-        environment.define_default("timeit", Value::Call(Rc::new(Timeit{}))); //outputs current time in seconds 
-        environment.define_default("abs", Value::Call(Rc::new(Abs{}))); //Absolute value
+        let mut environment = Rc::new(RefCell::new(Environment::new(None))); 
+
+        let mut edittable_env = environment.borrow_mut();
+        edittable_env.define_default("timeit", Value::Call(Rc::new(Timeit{}), Rc::clone(&environment))); //outputs current time in seconds 
+        edittable_env.define_default("abs", Value::Call(Rc::new(Abs{}), Rc::clone(&environment))); //Absolute value
         Interpreter{
-            global_environment: Rc::new(RefCell::new(environment)),
+            global_environment: Rc::clone(&environment),
             is_prime: true
         }
     }
@@ -129,7 +131,7 @@ impl Interpreter {
             name: t, args_list: vt, statement_list: vs
         };
 
-        return self.global_environment.borrow_mut().define(t_clone, Value::Call(Rc::new(function_call)));
+        return self.global_environment.borrow_mut().define(t_clone, Value::Call(Rc::new(function_call), Rc::clone(&self.global_environment)));
     }
 
     fn execute_print(&mut self, expression:Expression)-> Result<Value, BreakResult>{
@@ -141,7 +143,7 @@ impl Interpreter {
             Value::Bool(m) => {println!("{}", m)},
             Value::None => {println!("none")},
             Value::String(m) => {println!("{}", m)},
-            Value::Call(callee) => {println!("<fn {}>", callee.toString())}
+            Value::Call(callee, env) => {println!("<fn {}>", callee.toString())}
         }
 
         return Ok(Value::None);
@@ -373,8 +375,8 @@ impl Interpreter {
         let mut func_env = Environment::new(Some(Rc::clone(&self.global_environment))); 
 
         match callee_ev {
-            Value::Call(call) => {
-                let value = call.call(Interpreter { global_environment: Rc::new(RefCell::new(func_env)), is_prime: false}, processed_args);
+            Value::Call(call, env) => {
+                let value = call.call(Interpreter { global_environment: Rc::clone(&env), is_prime: false}, processed_args);
                 
                 match value {
                     Ok(v) => {return Ok(v)},

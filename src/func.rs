@@ -29,7 +29,7 @@ pub trait Func {
             },
             "Bool" => {if matches!(args, Value::Bool(_)) {Ok(args)} else {Err(format!("Expected type {} but got {:?}", value_type, args))}},
             "None" => {if matches!(args, Value::None) {Ok(args)} else {Err(format!("Expected type {} but got {:?}", value_type, args))}},
-            "Call" => {if matches!(args, Value::Call(_)) {Ok(args)} else {Err(format!("Expected type {} but got {:?}", value_type, args))}},
+            "Call" => {if matches!(args, Value::Call(..)) {Ok(args)} else {Err(format!("Expected type {} but got {:?}", value_type, args))}},
             _=>{unreachable!()}
         }
     }

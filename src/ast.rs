@@ -2,9 +2,11 @@ use crate::interpreter;
 use crate::token::Token;
 use crate::token::TokenKind;
 use crate::interpreter::Interpreter;
+use crate::environment::Environment;
 use crate::func::Func;
 use std::fmt::{Debug, Formatter, Result};
 use std::rc::Rc;
+use std::cell::RefCell; 
 
 #[derive(Debug, Clone)]
 
@@ -28,7 +30,7 @@ pub enum Value
     Int(i128),
     Float(f64),
     Bool(bool),
-    Call(Rc<dyn Func>),
+    Call(Rc<dyn Func>, Rc<RefCell<Environment>>),
     None
 }
 
@@ -42,7 +44,7 @@ impl Debug for Value {
             Value::Bool(b) => f.debug_tuple("Bool").field(b).finish(),
             
             // This is the "dummy" logic for the closure/function
-            Value::Call(callee) => write!(f, "{}", format!("Call(<fn {} >)", callee.toString())),
+            Value::Call(callee, env) => write!(f, "{}", format!("Call(<fn {} >)", callee.toString())),
             Value::None => write!(f, "None"),
         }
     }
