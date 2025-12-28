@@ -5,6 +5,7 @@ use crate::ast::Value;
 use crate::ast::Statement; 
 use std::process; 
 use std::mem;
+use std::thread::current;
 pub struct Parser {
     tokens_list: Vec<Token>,
     curr_index: usize, 
@@ -28,7 +29,6 @@ impl Parser{
         let mut statement_list = Vec::new(); 
         
         while !(self.atEnd()) {
-
             let dec = self.declaration();
             //dbg!(&dec);
             statement_list.push(dec);
@@ -58,7 +58,7 @@ impl Parser{
                 if self.check(TokenKind::SEMICOLON){
                     self.curr_index += 1; 
 
-                    return Statement::Var(token.lexeme.clone(), expr)
+                    return Statement::Var(token, expr)
                 }
 
                 self.handle_error("Expect ';' after variable declaration");
@@ -66,7 +66,7 @@ impl Parser{
 
             if self.check(TokenKind::SEMICOLON){
                 self.curr_index += 1; 
-                return Statement::Var(token.lexeme.clone(), Expression::Literal(Value::None));
+                return Statement::Var(token, Expression::Literal(Value::None));
             }
 
             self.handle_error("Expect '=' after variable declaration");
@@ -74,31 +74,30 @@ impl Parser{
 
         self.handle_error("Expect variable name after declaration"); 
 
-        Statement::Var(String::from("_"), Expression::Literal(Value::None)) 
+        unreachable!();
     }
 
     fn statement(&mut self) -> Statement{
 
-        if self.check(TokenKind::FOR){
-            self.curr_index += 1;
-            return self.forStatement(); 
+        let currentToken = &self.tokens_list[self.curr_index]; 
+        self.curr_index += 1; 
+
+        match currentToken.kind{
+            TokenKind::FOR => return self.forStatement(), 
+            TokenKind::IF => return self.ifStatement(), 
+            TokenKind::PRINT => return self.printStatement(), 
+            TokenKind::WHILE => return self.whileStatement(), 
+            TokenKind::BREAK => {
+                let statement = Statement::Break(currentToken.clone()); 
+                if !self.check(TokenKind::SEMICOLON){
+                    self.handle_error("';' is expected after break");
+                }
+                self.curr_index += 1; 
+                return statement; 
+            }, 
+            TokenKind::LEFT_BRACE => return self.block(),
+            _ => {self.curr_index -= 1}   
         }
-        else if self.check(TokenKind::IF){
-            self.curr_index += 1;
-            return self.ifStatement(); 
-        }
-        else if self.check(TokenKind::PRINT){
-            self.curr_index += 1; 
-            return self.printStatement(); 
-        } 
-        else if self.check(TokenKind::WHILE){
-            self.curr_index += 1; 
-            return self.whileStatement(); 
-        } 
-        else if self.check(TokenKind::LEFT_BRACE){
-            self.curr_index += 1; 
-            return self.block(); 
-        } 
 
        return self.expressionStatement();
     }
@@ -384,7 +383,41 @@ impl Parser{
             return Expression::Unary(operator, Box::new(right)); 
         }
 
-        return self.primary(); 
+        return self.call(); 
+    }
+
+    fn call(&mut self) -> Expression {
+        let mut expr = self.primary(); 
+
+        loop{
+            if !self.check(TokenKind::LEFT_PAREN){
+                break;
+            }
+
+            let mut args_list: Vec<Expression> = Vec::new(); 
+
+            self.curr_index += 1;
+
+            if !self.check(TokenKind::RIGHT_PAREN){
+                args_list.push(self.expression()); 
+
+                while self.check(TokenKind::COMMA){
+                    self.curr_index += 1; 
+                    args_list.push(self.expression());
+                }
+            }
+
+            if self.check(TokenKind::RIGHT_PAREN){
+                if args_list.len() > 255 {self.handle_error("You can have no more than 255 arguments")};
+                expr = Expression::Call(Box::new(expr), (&self.tokens_list[self.curr_index]).clone(), Box::new(args_list));
+                self.curr_index += 1; 
+            } else {
+                self.handle_error("Expected ')' after arguments");
+            }
+
+        }
+
+        return expr; 
     }
 
     fn primary(&mut self)->Expression{

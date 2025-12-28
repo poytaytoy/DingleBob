@@ -21,6 +21,8 @@ use interpreter::Interpreter;
 
 mod environment;
 
+mod func;
+
 //TODO Things to look into 
 //1. lifetimes how the <'a> work and what the fuck is going on with them 
 //2. how crates and libs work in rust  
@@ -57,6 +59,8 @@ fn main() -> io::Result<()> {
     let mut parse = Parser::new(token_list);
       
     let mut parsed = parse.parse();
+
+    //dbg!(&parsed);
    
     let mut interpret = Interpreter::new();
 

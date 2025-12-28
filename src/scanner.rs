@@ -112,6 +112,7 @@ impl<'a> Scanner<'a> {
             "let" => TokenKind::LET,
             "while" => TokenKind::WHILE,
             "define" => TokenKind::DEFINE,
+            "break" => TokenKind::BREAK,
             _ => TokenKind::IDENTIFIER,
         };
         
@@ -172,7 +173,6 @@ impl<'a> Scanner<'a> {
                 '!' => self.handle_equal(TokenKind::BANG, TokenKind::BANG_EQUAL, '!'),
                 '>' => self.handle_equal(TokenKind::GREATER, TokenKind::GREATER_EQUAL, '>'),
                 '<' => self.handle_equal(TokenKind::LESS, TokenKind::LESS_EQUAL, '<'),
-
                 '"' => self.handle_strings(),
                 '0'..='9' => self.handle_digits(curr_char),
                 _ => {

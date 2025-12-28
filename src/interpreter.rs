@@ -5,31 +5,44 @@ use crate::token::TokenKind;
 use crate::token::Token; 
 use crate::environment::Environment; 
 use std::cell::Ref;
-use std::f32::consts::E;
+use std::clone;
 use std::process; 
 use std::rc::Rc; 
 use std::cell::RefCell; 
+use crate::func::*; 
 
 
 //TODO FIX THE PRIVACY LEVELS OF THE INTERPRET (This removed but it'd be very helpful to properly learn how trait works in Rust )
 
 pub struct Interpreter{
     global_environment: Rc<RefCell<Environment>>,
+    loop_iteration: i32, 
 }
-
 
 impl Interpreter {
 
     pub fn new() -> Self {
+
+        let mut environment = Environment::new(None); 
+        environment.define_default("timeit", Value::Call(Rc::new(Timeit{}))); //outputs current time in seconds 
+        environment.define_default("abs", Value::Call(Rc::new(Abs{}))); //Absolute value
         Interpreter{
-            global_environment: Rc::new(RefCell::new(Environment::new(None)))
+            global_environment: Rc::new(RefCell::new(environment)),
+            loop_iteration: 0
         }
     }
     
     pub fn interpret(&mut self, statements: Vec<Statement>){
+
+        let curr_loop_iteration = self.loop_iteration; 
+
         for stmt in statements{
-            //dbg!(&stmt);
-            self.execute(stmt); 
+            if curr_loop_iteration == self.loop_iteration{
+                self.execute(stmt); 
+            } else {
+                break;
+            }
+
         }
     }
 
@@ -40,8 +53,15 @@ impl Interpreter {
             Statement::Print(exp) => {self.execute_print(exp)},     
             Statement::Var(var, value) => {self.execute_var(var, value)},
             Statement::Block(statements) => {self.execute_block(*statements)},
-            Statement::While(exp, s) => {self.execute_while(exp, *s)}   
-            
+            Statement::While(exp, s) => {self.execute_while(exp, *s)},
+            Statement::Break(t) => {
+                if self.loop_iteration == 0{
+                    self.handle_error("Break can only be used in a loop", t.line)
+                } else {
+                    self.loop_iteration -= 1;
+                }
+                ;
+            }   
         };
     }
 
@@ -86,11 +106,12 @@ impl Interpreter {
             Value::Float(m) => {println!("{}", m)},
             Value::Bool(m) => {println!("{}", m)},
             Value::None => {println!("none")},
-            Value::String(m) => {println!("{}", m)}
+            Value::String(m) => {println!("{}", m)},
+            Value::Call(_) => {println!("<Call>")}
         }
     }
 
-    fn execute_var(&mut self, var: String, value: Expression){ 
+    fn execute_var(&mut self, var: Token, value: Expression){ 
 
         let evaluated_var = self.evaluate(value); 
         self.global_environment.borrow_mut().define(var, evaluated_var);
@@ -104,18 +125,24 @@ impl Interpreter {
         self.interpret(statements);
 
         self.global_environment = curr_env;
-        
     }
 
     fn execute_while(&mut self, exp: Expression, s: Statement){
 
         let mut exp_ev = self.evaluate(exp.clone()); 
 
+        self.loop_iteration += 1; 
         //TODO ngl, this cloning thing feels really awkward, might be worth checking this up once all is done
 
-        while self.to_bool(&exp_ev){
+        let curr_loop_iteration = self.loop_iteration; 
+
+        while self.to_bool(&exp_ev) && curr_loop_iteration == self.loop_iteration{
             self.execute(s.clone());
-            exp_ev = self.evaluate(exp.clone()); 
+            exp_ev = self.evaluate(exp.clone());    
+        }
+
+        if curr_loop_iteration == self.loop_iteration{
+            self.loop_iteration -= 1; 
         }
     }
 
@@ -124,9 +151,10 @@ impl Interpreter {
         match expression{ 
             Expression::Assign(t, a) => self.evaluate_assign(t, a),
             Expression::Binary(l, o, r) => self.evaluate_binary(l, o, r), 
-            Expression::Unary(o, r) => self.evaluate_unary(o, r), 
-            Expression::Literal(v) => self.evaluate_literal(v),
+            Expression::Unary(o, r) => self.evaluate_unary(o, r),
+            Expression::Call(callee, paren, args) => {self.evaluate_call(*callee, paren, *args)} 
             Expression::Logical(l,o ,r ) => self.evaluate_logical(*l, o, *r),
+            Expression::Literal(v) => self.evaluate_literal(v),
             Expression::Grouping(exp) => self.evaluate_grouping(exp), 
             Expression::Variable(t) => self.evaluate_variable(t)
         }
@@ -370,6 +398,29 @@ impl Interpreter {
         return Value::None; 
     }
 
+    fn evaluate_call(&mut self, callee:Expression, paren:Token, args: Vec<Expression>) -> Value{
+        let callee_ev = self.evaluate(callee); 
+        
+        let mut processed_args: Vec<Value> = Vec::new();
+
+        for arg in args {
+            processed_args.push(self.evaluate(arg));
+        }
+
+        match callee_ev {
+            Value::Call(call) => {
+                let value = call.call(Interpreter { global_environment:Rc::clone(&self.global_environment), loop_iteration: 0 }, processed_args);
+                match value { 
+                    Ok(v) => {return v},
+                    Err(e) => {self.handle_error( &format!("Error from function call \n \t ^ {}", &e), paren.line);}
+                }
+            },
+            _ => {self.handle_error("Only Calls can be called", paren.line);}
+        }
+
+        unreachable!();
+    }
+    
     fn evaluate_logical(&mut self, l:Expression, o: Token, r: Expression) -> Value{
         let l_ev = self.evaluate(l);
 

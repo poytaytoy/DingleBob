@@ -19,8 +19,16 @@ impl Environment {
         }
     }
 
-    pub fn define(&mut self, var: String, value:Value){
-        self.hashMap.insert(var, value); 
+    pub fn define(&mut self, var: Token, value:Value){
+        if self.hashMap.contains_key(&var.lexeme){
+            self.handle_error(&format!("Variable '{}' has already been declared", &var.lexeme), var.line);
+        }
+        self.hashMap.insert(var.lexeme.clone(), value); 
+    }
+
+    pub fn define_default(&mut self, name: &str, value:Value){
+        //for default functions
+        self.hashMap.insert(String::from(name), value); 
     }
 
     pub fn get(&self, token:Token) -> Option<Value>{
@@ -33,7 +41,7 @@ impl Environment {
 
         match &self.env_superior { 
             Some(env) => {return env.borrow_mut().get(token)},
-            None => {self.handle_error(&format!("Undenfined symbol not found within any scope {}", token.lexeme), token.line);
+            None => {self.handle_error(&format!("Undenfined variable '{}' not found within any scope", token.lexeme), token.line);
                      return None}
         }
     }
