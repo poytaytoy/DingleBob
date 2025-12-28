@@ -1,11 +1,17 @@
+use crate::interpreter;
 use crate::interpreter::Interpreter;
 use crate::ast::Value; 
 use crate::ast::Statement;
+use crate::ast::Expression;
+use crate::token::Token;
+use std::env::args_os;
+use std::io::LineWriter;
 use std::rc::Rc;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 
 pub trait Func { 
+    fn toString(&self) -> String; 
     fn expect(&self, args: Value, value_type: &str) -> Result<Value, String>{
         match value_type{
             "String" => {if matches!(args, Value::String(_)) {Ok(args)} else {Err(format!("Expected type {} but got {:?}", value_type, args))}},
@@ -32,9 +38,13 @@ pub trait Func {
 pub struct Timeit; 
 
 impl Func for Timeit {
+    fn toString(&self ) -> String {
+        return String::from("timeit")
+    }
+
     fn call(&self, _interpreter: Interpreter, input_args: Vec<Value>) -> Result<Value, String> {
 
-        if input_args.len() > 0 { 
+        if input_args.len() != 0 { 
             return Err(String::from("Argument size mismatch; Expected 0 argument(s)"));
         }
 
@@ -51,8 +61,12 @@ pub struct Abs;
 
 impl Func for Abs { 
 
+    fn toString(&self ) -> String {
+        return String::from("abs")
+    }
+
     fn call(&self, interpreter: Interpreter, input_args: Vec<Value>) -> Result<Value, String>{
-        if input_args.len() > 1 { 
+        if input_args.len() != 1 { 
             return Err(String::from("Argument size mismatch; Expected 1 argument(s)"));
         }
 
@@ -67,5 +81,41 @@ impl Func for Abs {
         return Ok(Value::Float(input_num.abs()));
     }
 }
+
+pub struct Function{
+    pub name: Token, 
+    pub args_list: Vec<Token>, 
+    pub statement_list: Vec<Statement>
+}
+
+impl Func for Function {
+
+    fn toString(&self) -> String {
+        return self.name.lexeme.clone();
+    }
+    
+    fn call(&self, mut interpreter: Interpreter, input_args: Vec<Value>) -> Result<Value, String>  {
+        if input_args.len() != self.args_list.len() { 
+            return Err(String::from("Argument size mismatch; Expected 1 argument(s)"));
+        }
+
+        let mut var_list: Vec<Statement> = Vec::new(); 
+        for n in 0..input_args.len(){
+            var_list.push(Statement::Var((&self.args_list[n]).clone(), Expression::Literal(input_args[n].clone())))
+        }
+
+        var_list.push(Statement::Block(Box::new(self.statement_list.clone())));
+
+        interpreter.interpret(var_list);
+        
+        return Ok(Value::None);
+    }
+    
+}
+
+
+
+
+
 
 

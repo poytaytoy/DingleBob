@@ -1,6 +1,7 @@
 use crate::ast::Expression;
 use crate::ast::Value;
 use crate::ast::Statement; 
+use crate::func;
 use crate::token::TokenKind; 
 use crate::token::Token; 
 use crate::environment::Environment; 
@@ -15,7 +16,7 @@ use crate::func::*;
 //TODO FIX THE PRIVACY LEVELS OF THE INTERPRET (This removed but it'd be very helpful to properly learn how trait works in Rust )
 
 pub struct Interpreter{
-    global_environment: Rc<RefCell<Environment>>,
+    pub global_environment: Rc<RefCell<Environment>>,
     loop_iteration: i32, 
 }
 
@@ -50,7 +51,9 @@ impl Interpreter {
         match stmt {
             Statement::Expression(exp)=> {self.evaluate(exp);}
             Statement::If(exp, then_s, else_s) => {self.execute_if(exp, *then_s, *else_s)},
+            Statement::Function(t,vt ,vs ) => {self.execute_function(t, vt, *vs);},
             Statement::Print(exp) => {self.execute_print(exp)},     
+            Statement::Return(t, val) => {self.execute_return(t, val)},
             Statement::Var(var, value) => {self.execute_var(var, value)},
             Statement::Block(statements) => {self.execute_block(*statements)},
             Statement::While(exp, s) => {self.execute_while(exp, *s)},
@@ -61,7 +64,8 @@ impl Interpreter {
                     self.loop_iteration -= 1;
                 }
                 ;
-            }   
+            },
+            _ => {unreachable!()}
         };
     }
 
@@ -98,6 +102,17 @@ impl Interpreter {
         }
     }
 
+    fn execute_function(&mut self, t: Token, vt: Vec<Token>, vs: Vec<Statement>){
+
+        let t_clone = (&t).clone();
+
+        let function_call = Function {
+            name: t, args_list: vt, statement_list: vs
+        };
+
+        self.global_environment.borrow_mut().define(t_clone, Value::Call(Rc::new(function_call)));
+    }
+
     fn execute_print(&mut self, expression:Expression){
         let value = self.evaluate(expression); 
 
@@ -107,8 +122,12 @@ impl Interpreter {
             Value::Bool(m) => {println!("{}", m)},
             Value::None => {println!("none")},
             Value::String(m) => {println!("{}", m)},
-            Value::Call(_) => {println!("<Call>")}
+            Value::Call(callee) => {println!("<fn {}>", callee.toString())}
         }
+    }
+
+    fn execute_return(&mut self, t: Token, val: Expression){
+    
     }
 
     fn execute_var(&mut self, var: Token, value: Expression){ 
@@ -407,9 +426,11 @@ impl Interpreter {
             processed_args.push(self.evaluate(arg));
         }
 
+        let mut func_env = Environment::new(Some(Rc::clone(&self.global_environment))); 
+
         match callee_ev {
             Value::Call(call) => {
-                let value = call.call(Interpreter { global_environment:Rc::clone(&self.global_environment), loop_iteration: 0 }, processed_args);
+                let value = call.call(Interpreter { global_environment: Rc::new(RefCell::new(func_env)), loop_iteration: 0 }, processed_args);
                 match value { 
                     Ok(v) => {return v},
                     Err(e) => {self.handle_error( &format!("Error from function call \n \t ^ {}", &e), paren.line);}

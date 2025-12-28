@@ -1,8 +1,6 @@
+define add(a, b) {
+    print a + b; 
+    #add(a, b);
+}
 
-let first_time = timeit();
-
-print 1 + 1;
-
-print timeit() - first_time; 
-
-print abs("e");
+add(1, 2);

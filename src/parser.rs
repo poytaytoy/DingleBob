@@ -1,8 +1,10 @@
+use crate::func::Func;
 use crate::token::TokenKind;
 use crate::token::Token; 
 use crate::ast::Expression; 
 use crate::ast::Value;
 use crate::ast::Statement; 
+use std::env::args;
 use std::process; 
 use std::mem;
 use std::thread::current;
@@ -44,6 +46,7 @@ impl Parser{
 
         match currentToken.kind{
             TokenKind::LET => return self.varDeclaration(), 
+            TokenKind::DEFINE => return self.function(), 
             _ => {self.curr_index -= 1}   
         }
 
@@ -81,6 +84,61 @@ impl Parser{
         unreachable!();
     }
 
+    fn function(&mut self) -> Statement {
+        
+        if !self.check(TokenKind::IDENTIFIER){
+            self.handle_error("Expected a function name");
+        }
+
+        let name = (&self.tokens_list[self.curr_index]).clone(); 
+        self.curr_index += 1; 
+
+        if !self.check(TokenKind::LEFT_PAREN){
+           self.handle_error("Expected '(' after function name declaration");
+        }
+
+        let mut args_list: Vec<Token> = Vec::new();
+
+        self.curr_index += 1;
+
+        if !self.check(TokenKind::RIGHT_PAREN){
+            loop {
+                if !self.check(TokenKind::IDENTIFIER){
+                    self.handle_error("Expected a parameter name");
+                }
+
+                args_list.push((&self.tokens_list[self.curr_index]).clone()); 
+
+                self.curr_index += 1; 
+
+                if !self.check(TokenKind::COMMA){
+                    break;
+                }
+
+                self.curr_index += 1; 
+            }
+        }
+
+        if self.check(TokenKind::RIGHT_PAREN){
+            if args_list.len() > 255 {self.handle_error("You can have no more than 255 arguments")};
+            self.curr_index += 1; 
+        } else {
+            self.handle_error("Expected ')' after arguments");
+        } 
+
+        if !self.check(TokenKind::LEFT_BRACE){
+           self.handle_error("Expected '{' before function body");
+        }
+
+        self.curr_index += 1;
+
+        let Statement::Block(statements) = self.block() else {
+            unreachable!()
+        };
+
+        Statement::Function(name, args_list, statements)
+    }
+
     fn statement(&mut self) -> Statement{
 
         let currentToken = &self.tokens_list[self.curr_index]; 
@@ -90,6 +148,7 @@ impl Parser{
             TokenKind::FOR => return self.forStatement(), 
             TokenKind::IF => return self.ifStatement(), 
             TokenKind::PRINT => return self.printStatement(), 
+            TokenKind::RETURN => return self.returnStatement(),
             TokenKind::WHILE => return self.whileStatement(), 
             TokenKind::BREAK => {
                 let statement = Statement::Break(currentToken.clone()); 
@@ -215,6 +274,23 @@ impl Parser{
         return Statement::Print(expr); 
     }
 
+    fn returnStatement(&mut self) -> Statement {
+        let return_token = (&self.tokens_list[self.curr_index]).clone(); 
+        let mut value = Expression::Literal(Value::None);
+
+        if !self.check(TokenKind::SEMICOLON){
+            value = self.expression(); 
+        }
+
+        if !self.check(TokenKind::SEMICOLON){
+            self.handle_error("Expect ';' after return value");
+        }
+
+        self.curr_index += 1; 
+
+        return Statement::Return(return_token, value);
+    }   
+
     fn whileStatement(&mut self) -> Statement {
 
         let expr = self.expression(); 
@@ -309,8 +385,6 @@ impl Parser{
 
         return expr; 
     }
-
-    
 
     fn equality(&mut self) -> Expression{
 

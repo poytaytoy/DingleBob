@@ -42,7 +42,7 @@ impl Debug for Value {
             Value::Bool(b) => f.debug_tuple("Bool").field(b).finish(),
             
             // This is the "dummy" logic for the closure/function
-            Value::Call(_) => write!(f, "Call(<function>)"),
+            Value::Call(callee) => write!(f, "{}", format!("Call(<fn {} >)", callee.toString())),
             Value::None => write!(f, "None"),
         }
     }
@@ -53,8 +53,10 @@ impl Debug for Value {
 pub enum Statement {
     Var(Token, Expression),
     Expression(Expression), 
+    Function(Token, Vec<Token>, Box<Vec<Statement>>),
     If(Expression, Box<Statement>, Box<Statement>), //For the case of no else, just set to some useless expression. 
     Print(Expression),
+    Return(Token, Expression),
     While(Expression, Box<Statement>),
     Break(Token), 
     Block(Box<Vec<Statement>>)
