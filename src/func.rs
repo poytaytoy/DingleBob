@@ -3,6 +3,7 @@ use crate::interpreter::Interpreter;
 use crate::ast::Value; 
 use crate::ast::Statement;
 use crate::ast::Expression;
+use crate::ast::BreakResult;
 use crate::token::Token;
 use std::env::args_os;
 use std::io::LineWriter;
@@ -32,7 +33,7 @@ pub trait Func {
             _=>{unreachable!()}
         }
     }
-    fn call(&self, interpreter: Interpreter, input_args: Vec<Value>) -> Result<Value, String>; 
+    fn call(&self, interpreter: Interpreter, input_args: Vec<Value>) -> Result<Value, BreakResult>; 
 }
 
 pub struct Timeit; 
@@ -42,10 +43,10 @@ impl Func for Timeit {
         return String::from("timeit")
     }
 
-    fn call(&self, _interpreter: Interpreter, input_args: Vec<Value>) -> Result<Value, String> {
+    fn call(&self, _interpreter: Interpreter, input_args: Vec<Value>) -> Result<Value, BreakResult> {
 
         if input_args.len() != 0 { 
-            return Err(String::from("Argument size mismatch; Expected 0 argument(s)"));
+            return Err(BreakResult::Error(String::from("Argument size mismatch; Expected 0 argument(s)")));
         }
 
         let start = SystemTime::now();
@@ -65,16 +66,16 @@ impl Func for Abs {
         return String::from("abs")
     }
 
-    fn call(&self, interpreter: Interpreter, input_args: Vec<Value>) -> Result<Value, String>{
+    fn call(&self, interpreter: Interpreter, input_args: Vec<Value>) -> Result<Value, BreakResult>{
         if input_args.len() != 1 { 
-            return Err(String::from("Argument size mismatch; Expected 1 argument(s)"));
+            return Err(BreakResult::Error(String::from("Argument size mismatch; Expected 1 argument(s)")));
         }
 
         let mut input_num: f64; 
 
         match self.expect(input_args[0].clone(), "Float"){
             Ok(Value::Float(n)) => {input_num = n;},
-            Err(e) => {return Err(e)},
+            Err(e) => {return Err(BreakResult::Error(e))},
             _=> {unreachable!()}
         }
         
@@ -93,10 +94,10 @@ impl Func for Function {
     fn toString(&self) -> String {
         return self.name.lexeme.clone();
     }
-    
-    fn call(&self, mut interpreter: Interpreter, input_args: Vec<Value>) -> Result<Value, String>  {
+
+    fn call(&self, mut interpreter: Interpreter, input_args: Vec<Value>) -> Result<Value, BreakResult>  {
         if input_args.len() != self.args_list.len() { 
-            return Err(String::from("Argument size mismatch; Expected 1 argument(s)"));
+            return Err(BreakResult::Error(String::from("Argument size mismatch; Expected 1 argument(s)")));
         }
 
         let mut var_list: Vec<Statement> = Vec::new(); 
@@ -105,10 +106,12 @@ impl Func for Function {
         }
 
         var_list.push(Statement::Block(Box::new(self.statement_list.clone())));
-
-        interpreter.interpret(var_list);
         
-        return Ok(Value::None);
+        match interpreter.interpret(var_list) {
+            Ok(_) => {return Ok(Value::None);},
+            Err(BreakResult::Return(t,v )) => {return Ok(v)},
+            Err(br) => {return Err(br)}
+        }
     }
     
 }

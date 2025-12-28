@@ -62,7 +62,7 @@ fn main() -> io::Result<()> {
 
     //dbg!(&parsed);
    
-    let mut interpret = Interpreter::new();
+    let mut interpret = Interpreter::new(true);
 
     interpret.interpret(parsed);
 

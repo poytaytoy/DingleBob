@@ -1,6 +1,10 @@
-define add(a, b) {
-    print a + b; 
-    #add(a, b);
+# This is a dinglebob comment
+let c = 10;
+
+define multiply_add(a, b) {
+    # Accessing global 'c'
+    return (a * b) + c;
 }
 
-add(1, 2);
+print multiply_add(5, 2); # Expected: 20
+

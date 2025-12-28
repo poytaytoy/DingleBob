@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use crate::ast::Value;
-use crate::token::Token; 
+use crate::ast::BreakResult;
+use crate::token::Token;
 use std::process; 
 use std::rc::Rc; 
 use std::cell::RefCell; 
@@ -19,11 +20,13 @@ impl Environment {
         }
     }
 
-    pub fn define(&mut self, var: Token, value:Value){
+    pub fn define(&mut self, var: Token, value:Value) -> Result<Value, BreakResult>{
         if self.hashMap.contains_key(&var.lexeme){
-            self.handle_error(&format!("Variable '{}' has already been declared", &var.lexeme), var.line);
+            return Err(BreakResult::Error(self.handle_error(&format!("Variable '{}' has already been declared", &var.lexeme), var.line)));
         }
         self.hashMap.insert(var.lexeme.clone(), value); 
+
+        return Ok(Value::None);
     }
 
     pub fn define_default(&mut self, name: &str, value:Value){
@@ -31,7 +34,7 @@ impl Environment {
         self.hashMap.insert(String::from(name), value); 
     }
 
-    pub fn get(&self, token:Token) -> Option<Value>{
+    fn retrieve(&self, token: Token) -> Option<Value>{
         let result = self.hashMap.get(&token.lexeme); 
 
         match result {
@@ -40,13 +43,22 @@ impl Environment {
         }
 
         match &self.env_superior { 
-            Some(env) => {return env.borrow_mut().get(token)},
-            None => {self.handle_error(&format!("Undenfined variable '{}' not found within any scope", token.lexeme), token.line);
-                     return None}
+            Some(env) => {return env.borrow_mut().retrieve(token)},
+            None => {return None}
+        }
+    }
+
+    pub fn get(&self, token:Token) -> Result<Value, BreakResult>{
+
+        let cloned_token = token.clone();
+
+        match self.retrieve(token){
+            Some(v) => {return Ok(v)}, 
+            None => {return Err(BreakResult::Error(self.handle_error(&format!("Undenfined variable '{}' not found within current scope", cloned_token.lexeme), cloned_token.line)))}
         }
     }
     
-    pub fn assign(&mut self, token: Token, value: Value){
+    pub fn assign(&mut self, token: Token, value: Value)-> Result<Value, BreakResult>{
         //dbg!(self.hashMap.contains_key(&token.lexeme));
         if self.hashMap.contains_key(&token.lexeme){
             
@@ -56,14 +68,20 @@ impl Environment {
         } else {
             match &mut self.env_superior{
                 Some(env) => {env.borrow_mut().assign(token, value);},
-                None => {self.handle_error(&format!("Undenfined symbol assignment not found within any scope {}", &token.lexeme), token.line);}
+                None => {return Err(BreakResult::Error(self.handle_error(&format!("Undenfined symbol assignment not found within current scope {}", &token.lexeme), token.line)));}
             }
         }
+
+        return Ok(Value::None); 
     }
 
-    fn handle_error(&self, msg: &str, line: i32) {
+    // fn handle_error(&self, msg: &str, line: i32) {
 
-        eprintln!("[Line {}] Environment Error: {}", line, msg);
-        process::exit(1);
+    //     eprintln!("[Line {}] Environment Error: {}", line, msg);
+    //     process::exit(1);
+    // }
+
+    fn handle_error(&self, msg: &str, line: i32) -> String{
+        return format!("[Line {}] Interpreter Error: {}", line, msg);
     }
 }

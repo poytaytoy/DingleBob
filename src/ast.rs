@@ -62,3 +62,10 @@ pub enum Statement {
     Block(Box<Vec<Statement>>)
 }
 
+#[derive(Debug, Clone)]
+
+pub enum BreakResult {
+    Return(Token, Value), 
+    Error(String), 
+    Break(Token), 
+}
