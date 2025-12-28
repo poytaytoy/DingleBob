@@ -39,8 +39,12 @@ impl Parser{
 
     fn declaration(&mut self) -> Statement{ 
 
-        if self.match_token(&[TokenKind::LET]){
-            return self.varDeclaration(); 
+        let currentToken = &self.tokens_list[self.curr_index]; 
+        self.curr_index += 1; 
+
+        match currentToken.kind{
+            TokenKind::LET => return self.varDeclaration(), 
+            _ => {self.curr_index -= 1}   
         }
 
         return self.statement();
