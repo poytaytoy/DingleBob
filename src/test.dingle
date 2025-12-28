@@ -1,12 +1,6 @@
-define makeCounter() {
-    let i = 0;
-    
-    define count() {
-        i = i + 1;
-        print i;
-    }
-    return count;
+let a = "outer";
+{
+  let a = "inner";
+  print a; 
 }
-let counter = makeCounter();
-counter(); # "1".
-counter(); # "2".
+print a;

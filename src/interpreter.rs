@@ -318,6 +318,8 @@ impl Interpreter {
                 (Value::Int(m), Value::Float(n)) => Ok(Value::Bool((m as f64) == n)),
                 (Value::Float(m), Value::Int(n)) => Ok(Value::Bool(m == (n as f64))),
                 (Value::Bool(m), Value::Bool(n)) => Ok(Value::Bool(m == n)),
+                (Value::String(m), Value::String(n)) => Ok(Value::Bool(m == n)),
+                (Value::None, Value::None) => Ok(Value::Bool(true)),
                 _ => Err(self.handle_error("Invalid operation performed with '=='", o.line)),
             },
 

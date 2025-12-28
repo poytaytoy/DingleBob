@@ -10,6 +10,8 @@ use std::cell::RefCell;
 
 #[derive(Debug, Clone)]
 
+
+
 pub enum Expression {
     Assign(Token, Box<Expression>),
     Binary(Box<Expression>, Token , Box<Expression>),
@@ -21,9 +23,8 @@ pub enum Expression {
     Variable(Token)
 }
 
-
 #[derive(Clone)]
-
+ 
 pub enum Value
 {
     String(String),
@@ -37,13 +38,10 @@ pub enum Value
 impl Debug for Value {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         match self {
-            // Standard variants can just use their own Debug implementation
             Value::String(s) => f.debug_tuple("String").field(s).finish(),
             Value::Int(i) => f.debug_tuple("Int").field(i).finish(),
             Value::Float(fl) => f.debug_tuple("Float").field(fl).finish(),
             Value::Bool(b) => f.debug_tuple("Bool").field(b).finish(),
-            
-            // This is the "dummy" logic for the closure/function
             Value::Call(callee, env) => write!(f, "{}", format!("Call(<fn {} >)", callee.toString())),
             Value::None => write!(f, "None"),
         }

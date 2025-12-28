@@ -106,8 +106,8 @@ impl Func for Function {
         }
 
         var_list.push(Statement::Block(Box::new(self.statement_list.clone())));
-        
-        match interpreter.interpret(var_list) {
+
+        match interpreter.interpret(vec![Statement::Block(Box::new(var_list))]) {
             Ok(_) => {return Ok(Value::None);},
             Err(BreakResult::Return(t,v )) => {return Ok(v)},
             Err(br) => {return Err(br)}

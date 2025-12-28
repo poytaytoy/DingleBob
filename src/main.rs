@@ -23,6 +23,8 @@ mod environment;
 
 mod func;
 
+mod resolver; 
+
 //TODO Things to look into 
 //1. lifetimes how the <'a> work and what the fuck is going on with them 
 //2. how crates and libs work in rust  
