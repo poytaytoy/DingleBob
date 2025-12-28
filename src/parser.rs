@@ -11,6 +11,7 @@ use std::thread::current;
 pub struct Parser {
     tokens_list: Vec<Token>,
     curr_index: usize, 
+    var_id: i32
 }
 
 impl Parser{
@@ -19,6 +20,7 @@ impl Parser{
         Parser{
             tokens_list: tokens_list, 
             curr_index: 0,
+            var_id: 0
         }
     }
 
@@ -525,7 +527,7 @@ impl Parser{
                     self.handle_error(&format!("Invalid numeral with {}", &self.tokens_list[self.curr_index].lexeme));
                 }
             }
-            TokenKind::IDENTIFIER => return Expression::Variable(literal.clone()),
+            TokenKind::IDENTIFIER => return Expression::Variable(literal.clone() ),
             _=> {self.curr_index -= 1}
         }
 
