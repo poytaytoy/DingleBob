@@ -65,7 +65,6 @@ impl Environment {
         }
     }
 
-    // Fixed get_scope: It now properly descends through superior environments
     pub fn get_at(&self, token: Token, steps: i32) -> Result<Value, BreakResult> {
         if steps == 0 {
             return match self.hashMap.get(&token.lexeme) {

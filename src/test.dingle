@@ -1,17 +1,20 @@
 let initial = timeit(); 
 
-let ls1 = [1, 2, 3];
-let ls2 = [12, 4, 65];
+define numDigits(n) {
+    let count = 0;
+    let increment = 1; 
 
-print concat(ls1, ls2);
-print append(ls1, 99990);
+    while n >= increment {
+        count = count + 1; 
+        increment = increment * 10; 
+    } 
 
-print ls1; 
+    return count; 
 
-let a = copy(ls1);
-a[0] = "beans"; 
+}
 
-print ls1; 
-print a; 
+print numDigits(10); #2
+print numDigits(1); #1 
+print numDigits(3290320); #7 
 
 print "Time: " + (timeit() - initial);
