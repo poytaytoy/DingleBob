@@ -1,4 +1,15 @@
-# --- TEST 2: Mutation Capture ---
-let x = lambda(x) {print x};
+# TEST 4: Late Binding Mutual Recursion
+let isEven = "placeholder";
+let isOdd = "placeholder";
 
-x ("mutated");
+isEven = lambda(n) {
+    if n == 0 { return true; }
+    return isOdd(n - 1);
+};
+
+isOdd = lambda(n) {
+    if n == 0 { return false; }
+    return isEven(n - 1);
+};
+
+print isEven(10); # Expected: true

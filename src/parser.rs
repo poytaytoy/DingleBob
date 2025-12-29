@@ -507,7 +507,7 @@ impl Parser{
         }
 
         let literal: &Token = &self.tokens_list[self.curr_index]; 
-
+        
         self.curr_index += 1;
 
         match &literal.kind {
@@ -549,13 +549,13 @@ impl Parser{
     }
 
     fn lambda(&mut self) -> Expression{
-
+        
         if !self.check(TokenKind::LEFT_PAREN){
             self.handle_error("Expect '(' after lambda expression");
         }
-
+        
         self.curr_index += 1;
-
+       
         let mut args_list: Vec<Token> = Vec::new();
 
         loop{
@@ -573,6 +573,8 @@ impl Parser{
                 }
 
                 self.curr_index += 1; 
+            } else {
+                break;
             }
         }
 
@@ -591,6 +593,8 @@ impl Parser{
         let Statement::Block(statements) = statement else {
             unreachable!()
         };
+        
+        
 
         return Expression::Lambda(args_list, statements);
     }
