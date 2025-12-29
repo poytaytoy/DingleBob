@@ -1,6 +1,9 @@
-let a = "outer";
-{
-  let a = "inner";
-  print a; 
+# --- TEST 2: Mutation Capture ---
+let x = "original";
+
+define check() {
+    print x;
 }
-print a;
+
+x = "mutated";
+check(); # Expected: mutated (In snapshot mode, this was "original")

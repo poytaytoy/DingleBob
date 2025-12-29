@@ -23,7 +23,8 @@ mod environment;
 
 mod func;
 
-mod resolver; 
+mod resolver;
+use resolver::Resolver;
 
 //TODO Things to look into 
 //1. lifetimes how the <'a> work and what the fuck is going on with them 
@@ -63,8 +64,12 @@ fn main() -> io::Result<()> {
     let mut parsed = parse.parse();
 
     //dbg!(&parsed);
+
+    let mut resolver = Resolver::new();
+    resolver.resolve(parsed.clone()); 
+    
    
-    let mut interpret = Interpreter::new(true);
+    let mut interpret = Interpreter::new(true, resolver.locals);
 
     interpret.interpret(parsed);
 

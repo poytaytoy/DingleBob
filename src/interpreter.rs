@@ -8,6 +8,8 @@ use crate::token::Token;
 use crate::environment::Environment; 
 use std::cell::Ref;
 use std::clone;
+use std::collections::HashMap;
+use std::hash::Hash;
 use std::process; 
 use std::rc::Rc; 
 use std::cell::RefCell; 
@@ -19,11 +21,12 @@ use crate::func::*;
 pub struct Interpreter{
     pub global_environment: Rc<RefCell<Environment>>,
     pub is_prime: bool, 
+    pub locals: HashMap<Token, i32>
 }
 
 impl Interpreter {
 
-    pub fn new(is_prime: bool) -> Self {
+    pub fn new(is_prime: bool, locals: HashMap<Token, i32> ) -> Self {
 
         let mut environment = Rc::new(RefCell::new(Environment::new(None))); 
 
@@ -32,10 +35,11 @@ impl Interpreter {
         edittable_env.define_default("abs", Value::Call(Rc::new(Abs{}), Rc::clone(&environment))); //Absolute value
         Interpreter{
             global_environment: Rc::clone(&environment),
-            is_prime: true
+            is_prime: true,
+            locals: locals
         }
     }
-    
+
     pub fn interpret(&mut self, statements: Vec<Statement>) -> Result<Value, BreakResult>{
 
         for stmt in statements{
@@ -378,7 +382,7 @@ impl Interpreter {
 
         match callee_ev {
             Value::Call(call, env) => {
-                let value = call.call(Interpreter { global_environment: Rc::clone(&env), is_prime: false}, processed_args);
+                let value = call.call(Interpreter { global_environment: Rc::clone(&env), is_prime: false, locals: self.locals.clone()}, processed_args);
                 
                 match value {
                     Ok(v) => {return Ok(v)},
@@ -417,9 +421,12 @@ impl Interpreter {
     }
 
     fn evaluate_variable(&mut self, token: Token) -> Result<Value, BreakResult>{
-        return self.global_environment.borrow_mut().get(token);
 
-        //The none case should be impossible
+        let Some(steps) = self.locals.get(&token) else {
+            return self.global_environment.borrow_mut().get(token);
+        };
+
+        self.global_environment.borrow_mut().get_at(token, *steps)
     }
 
     // fn handle_error(&self, msg: &str, line: i32) {

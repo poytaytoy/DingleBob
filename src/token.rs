@@ -1,4 +1,4 @@
-#[derive(PartialEq, Debug, Copy, Clone)]
+#[derive(Eq, PartialEq, Debug, Copy, Clone, Hash)]
 pub enum TokenKind {
     LEFT_PAREN, RIGHT_PAREN, LEFT_BRACE, RIGHT_BRACE,
     COMMA, DOT, MINUS, PLUS, PERCENT, SEMICOLON, SLASH, STAR, DEFINE, 
@@ -18,10 +18,11 @@ pub enum TokenKind {
     EOF 
 }
 
-#[derive(PartialEq, Debug, Clone)]
+#[derive(Eq, PartialEq, Debug, Clone, Hash)]
 pub struct Token {
     pub kind: TokenKind, 
     pub lexeme: String, 
-    pub line: i32 
+    pub line: i32,
+    pub id: i32,  
 }
 

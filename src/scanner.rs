@@ -11,6 +11,7 @@ struct Scanner<'a> {
     curr_input: Chars<'a>,
     token_list: Vec<Token>,
     line: i32, 
+    token_id: i32,
 }
 
 impl<'a> Scanner<'a> {
@@ -19,6 +20,7 @@ impl<'a> Scanner<'a> {
             curr_input: input.chars(),
             token_list: Vec::new(),
             line: 1,
+            token_id: 0
         }
     }
     fn handle_error(&self, msg: &str) {
@@ -31,7 +33,10 @@ impl<'a> Scanner<'a> {
             kind,
             lexeme,
             line: self.line,
+            id: self.token_id
         });
+
+        self.token_id += 1;
     }
 
     fn peak(&self) -> Option<char> {

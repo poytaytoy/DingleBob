@@ -10,8 +10,6 @@ use std::cell::RefCell;
 
 #[derive(Debug, Clone)]
 
-
-
 pub enum Expression {
     Assign(Token, Box<Expression>),
     Binary(Box<Expression>, Token , Box<Expression>),
