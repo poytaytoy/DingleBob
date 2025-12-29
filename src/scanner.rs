@@ -168,6 +168,8 @@ impl<'a> Scanner<'a> {
                 '}' => self.add_token(TokenKind::RIGHT_BRACE, String::from("}")),
                 '(' => self.add_token(TokenKind::LEFT_PAREN, String::from("(")),
                 ')' => self.add_token(TokenKind::RIGHT_PAREN, String::from(")")),
+                '[' => self.add_token(TokenKind::LEFT_SQUARE, String::from("[")),
+                ']' => self.add_token(TokenKind::RIGHT_SQUARE, String::from("]")),
                 '%' => self.add_token(TokenKind::PERCENT, String::from("%")),
                 '#' => self.handle_comment(),
                 ' ' | '\r' | '\t' => continue,

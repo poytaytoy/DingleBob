@@ -5,6 +5,8 @@ use crate::ast::Statement;
 use crate::ast::Expression;
 use crate::ast::BreakResult;
 use crate::token::Token;
+use std::cell::Ref;
+use std::cell::RefCell;
 use std::env::args_os;
 use std::io::LineWriter;
 use std::rc::Rc;
@@ -13,24 +15,24 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 pub trait Func { 
     fn toString(&self) -> String; 
-    fn expect(&self, args: Value, value_type: &str) -> Result<Value, String>{
-        match value_type{
-            "String" => {if matches!(args, Value::String(_)) {Ok(args)} else {Err(format!("Expected type {} but got {:?}", value_type, args))}},
-            "Int" => {if matches!(args, Value::Int(_)) {Ok(args)} else {Err(format!("Expected type {} but got {:?}", value_type, args))}},
+    fn expect(&self, args: Value, value_type: &str) -> Result<Value, BreakResult> {
+        let err = |got: Value| Err(BreakResult::Error(format!("Expected type {} but got {:?}", value_type, got)));
+
+        match value_type {
+            "String" => if matches!(args, Value::String(_)) { Ok(args) } else { err(args) },
+            "Int" => if matches!(args, Value::Int(_)) { Ok(args) } else { err(args) },
             "Float" => {
-                if matches!(args, Value::Float(_)) || matches!(args, Value::Int(_)) { 
-                    match args {
-                        Value::Int(n) => {return Ok(Value::Float(n as f64))}, 
-                        Value::Float(n) => {return Ok(Value::Float(n))},
-                        _ => {unreachable!()}
-                    }
-                } 
-                else {Err(format!("Expected type {} but got {:?}", value_type, args))}
+                match args {
+                    Value::Int(n) => Ok(Value::Float(n as f64)),
+                    Value::Float(n) => Ok(Value::Float(n)),
+                    other => err(other),
+                }
             },
-            "Bool" => {if matches!(args, Value::Bool(_)) {Ok(args)} else {Err(format!("Expected type {} but got {:?}", value_type, args))}},
-            "None" => {if matches!(args, Value::None) {Ok(args)} else {Err(format!("Expected type {} but got {:?}", value_type, args))}},
-            "Call" => {if matches!(args, Value::Call(..)) {Ok(args)} else {Err(format!("Expected type {} but got {:?}", value_type, args))}},
-            _=>{unreachable!()}
+            "Bool" => if matches!(args, Value::Bool(_)) { Ok(args) } else { err(args) },
+            "None" => if matches!(args, Value::None) { Ok(args) } else { err(args) },
+            "Call" => if matches!(args, Value::Call(..)) { Ok(args) } else { err(args) },
+            "List" => if matches!(args, Value::List(_)) { Ok(args) } else { err(args) },
+            _ => unreachable!(),
         }
     }
     fn call(&self, interpreter: Interpreter, input_args: Vec<Value>) -> Result<Value, BreakResult>; 
@@ -71,15 +73,91 @@ impl Func for Abs {
             return Err(BreakResult::Error(String::from("Argument size mismatch; Expected 1 argument(s)")));
         }
 
-        let mut input_num: f64; 
-
-        match self.expect(input_args[0].clone(), "Float"){
-            Ok(Value::Float(n)) => {input_num = n;},
-            Err(e) => {return Err(BreakResult::Error(e))},
-            _=> {unreachable!()}
-        }
+        let Value::Float(input_num) = self.expect(input_args[0].clone(), "Float")? else {unreachable!()}; 
         
         return Ok(Value::Float(input_num.abs()));
+    }
+}
+
+pub struct Len; 
+
+impl Func for Len { 
+
+    fn toString(&self ) -> String {
+        return String::from("len")
+    }
+
+    fn call(&self, interpreter: Interpreter, input_args: Vec<Value>) -> Result<Value, BreakResult>{
+        if input_args.len() != 1 { 
+            return Err(BreakResult::Error(String::from("Argument size mismatch; Expected 1 argument(s)")));
+        }
+
+        let Value::List(lst) = self.expect(input_args[0].clone(), "List")? else {unreachable!()};
+
+        return Ok(Value::Int(lst.borrow().len() as i128));
+    }
+}
+
+pub struct Copy; 
+
+impl Func for Copy { 
+
+    fn toString(&self ) -> String {
+        return String::from("copy")
+    }
+
+    fn call(&self, interpreter: Interpreter, input_args: Vec<Value>) -> Result<Value, BreakResult>{
+        if input_args.len() != 1 { 
+            return Err(BreakResult::Error(String::from("Argument size mismatch; Expected 1 argument(s)")));
+        }
+
+        let Value::List(lst) = self.expect(input_args[0].clone(), "List")? else {unreachable!()};
+
+        return Ok(Value::List(Rc::new(RefCell::new(lst.borrow().clone()))));
+    }
+}
+
+pub struct Append; 
+
+impl Func for Append { 
+
+    fn toString(&self) -> String {
+        return String::from("append")
+    }
+
+    fn call(&self, interpreter: Interpreter, input_args: Vec<Value>) -> Result<Value, BreakResult>{
+        if input_args.len() != 2 { 
+            return Err(BreakResult::Error(String::from("Argument size mismatch; Expected 1 argument(s)")));
+        }
+
+        let Value::List(lst) = self.expect(input_args[0].clone(), "List")? else {unreachable!()};
+        let val = input_args[1].clone();
+
+        lst.borrow_mut().push(val);
+
+        return Ok(Value::List(Rc::clone(&lst)));
+    }
+}
+
+pub struct Concat; 
+
+impl Func for Concat { 
+
+    fn toString(&self) -> String {
+        return String::from("concat")
+    }
+
+    fn call(&self, interpreter: Interpreter, input_args: Vec<Value>) -> Result<Value, BreakResult>{
+        if input_args.len() != 2 { 
+            return Err(BreakResult::Error(String::from("Argument size mismatch; Expected 1 argument(s)")));
+        }
+
+        let Value::List(lst1) = self.expect(input_args[0].clone(), "List")? else {unreachable!()};
+        let Value::List(lst2) = self.expect(input_args[0].clone(), "List")? else {unreachable!()};
+
+        lst1.borrow_mut().append(&mut lst2.borrow_mut().clone());
+
+        return Ok(Value::List(Rc::clone(&lst1)));
     }
 }
 
@@ -126,11 +204,13 @@ impl Func for Lambda {
     fn toString(&self) -> String {
         let mut text = String::from("Lambda(");
 
-        text += " ";
+        for i in 0..self.args_list.len(){
+            
+            text += &self.args_list[i].lexeme ; 
 
-        for args in &self.args_list{
-            text += &args.lexeme ; 
-            text += " ";
+            if i != self.args_list.len() -1 {
+                text += ",";
+            }
         }
 
         text += ")";

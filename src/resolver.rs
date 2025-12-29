@@ -96,19 +96,23 @@ impl Resolver{
 
     fn resolve_exp(&mut self, exp: Expression) {
         match exp {
-            Expression::Assign(t, a) => { self.resolve_assign(t, *a); }
-            Expression::Binary(l, o, r) => { self.resolve_binary(*l, o, *r); }
-            Expression::Unary(o, r) => { self.resolve_unary(o, *r); }
-            Expression::Call(callee, paren, args) => { self.resolve_call(*callee, paren, *args); }
-            Expression::Logical(l, o, r) => { self.resolve_logical(*l, o, *r); }
-            Expression::Literal(v) => { self.resolve_literal(v); }
-            Expression::Grouping(exp) => { self.resolve_grouping(*exp); }
+            Expression::Assign(t, a, v) => { self.resolve_assign(*t, a, *v); },
+            Expression::Binary(l, o, r) => { self.resolve_binary(*l, o, *r); },
+            Expression::Unary(o, r) => { self.resolve_unary(o, *r); },
+            Expression::Call(callee, paren, args) => { self.resolve_call(*callee, paren, *args); },
+            Expression::Logical(l, o, r) => { self.resolve_logical(*l, o, *r); },
+            Expression::Literal(v) => { self.resolve_literal(v); },
+            Expression::Grouping(exp) => { self.resolve_grouping(*exp); },
             Expression::Variable(t) => { self.resolve_variable(t); },
-            Expression::Lambda(t, stmt) => {self.resolve_lambda(t, *stmt)}
+            Expression::Lambda(t, stmt) => {self.resolve_lambda(t, *stmt)},
+            Expression::Index(l,t ,i ) => {self.resolve_index(*l, t, *i)},
+            Expression::List(content, t) => self.resolve_list(*content, t)
+        
         }
     }
 
-    fn resolve_assign(&mut self, name: Token, value: Expression) {
+    fn resolve_assign(&mut self, assignee: Expression, equal: Token, value: Expression) {
+        self.resolve_exp(assignee);
         self.resolve_exp(value);
     }
 
@@ -166,6 +170,18 @@ impl Resolver{
             self.resolve_block(stmts);
             
             self.end_scope();
+        }
+    }
+
+    fn resolve_index(&mut self, l: Expression, t: Token, i: Expression){
+        self.resolve_exp(l);
+        self.resolve_exp(i);
+    }
+
+    fn resolve_list(&mut self, content: Vec<Expression>, t: Token){
+
+        for item in content{ 
+            self.resolve_exp(item);
         }
     }
 

@@ -11,7 +11,7 @@ use std::cell::RefCell;
 #[derive(Debug, Clone)]
 
 pub enum Expression {
-    Assign(Token, Box<Expression>),
+    Assign(Box<Expression>, Token, Box<Expression>),
     Binary(Box<Expression>, Token , Box<Expression>),
     Unary(Token, Box<Expression>), 
     Call(Box<Expression>, Token, Box<Vec<Expression>>),
@@ -19,7 +19,9 @@ pub enum Expression {
     Literal(Value), 
     Grouping(Box<Expression>),
     Variable(Token),
+    List(Box<Vec<Expression>>, Token),
     Lambda(Vec<Token>, Box<Vec<Statement>>), 
+    Index(Box<Expression>, Token,  Box<Expression>)
 }
 
 #[derive(Clone)]
@@ -31,6 +33,7 @@ pub enum Value
     Float(f64),
     Bool(bool),
     Call(Rc<dyn Func>, Rc<RefCell<Environment>>),
+    List(Rc<RefCell<Vec<Value>>>),
     None
 }
 
@@ -41,7 +44,8 @@ impl Debug for Value {
             Value::Int(i) => f.debug_tuple("Int").field(i).finish(),
             Value::Float(fl) => f.debug_tuple("Float").field(fl).finish(),
             Value::Bool(b) => f.debug_tuple("Bool").field(b).finish(),
-            Value::Call(callee, env) => write!(f, "{}", format!("Call(<fn {} >)", callee.toString())),
+            Value::Call(callee, env) => write!(f, "{}", format!("Call(<{}>)", callee.toString())),
+            Value::List(lst) => f.debug_tuple("List").field(lst).finish(),
             Value::None => write!(f, "None"),
         }
     }

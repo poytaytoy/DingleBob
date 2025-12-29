@@ -5,6 +5,7 @@ use crate::ast::Expression;
 use crate::ast::Value;
 use crate::ast::Statement; 
 use std::env::args;
+use std::ops::Index;
 use std::process; 
 use std::mem;
 use std::thread::current;
@@ -340,25 +341,51 @@ impl Parser{
     }
 
     fn assignment(&mut self) -> Expression{ 
-        let expr = self.or(); 
+        let expr = self.index(); 
 
         if self.check(TokenKind::EQUAL){
+
+            let equal_store = (&self.tokens_list[self.curr_index]).clone();
             self.curr_index += 1;
             let mut value = self.expression(); 
 
-            if matches!(expr, Expression::Variable(_)) {
-                let Expression::Variable(token)= expr else {
-                    unreachable!(); 
-                }; 
+            // if matches!(expr, Expression::Variable(_)) {
+            //     let Expression::Variable(token)= expr else {
+            //         unreachable!(); 
+            //     }; 
 
-                return Expression::Assign(token, Box::new(value)); 
-            }
+            //     return Expression::Assign(token, Box::new(value)); 
+            // }
 
-            self.handle_error("Invalid assignment target");
+            return Expression::Assign(Box::new(expr), equal_store, Box::new(value));
+
+            //self.handle_error("Invalid assignment target");
         }
 
         return expr; 
     }
+
+    fn index(&mut self) -> Expression{
+        let left_expr = self.or(); 
+
+        if self.check(TokenKind::LEFT_SQUARE){
+            self.curr_index += 1; 
+            let right_expr = self.expression(); 
+            
+            if !self.check(TokenKind::RIGHT_SQUARE){
+                self.handle_error("Expected to close with ']' after indexing");
+            }
+
+            let right_brace_store = (&self.tokens_list[self.curr_index]).clone();
+
+            self.curr_index += 1; 
+
+            return Expression::Index(Box::new(left_expr), right_brace_store, Box::new(right_expr));
+        }
+
+        return left_expr; 
+    }
+
 
     fn or(&mut self) -> Expression{
         let mut expr = self.and(); 
@@ -529,6 +556,7 @@ impl Parser{
             }
             TokenKind::IDENTIFIER => return Expression::Variable(literal.clone() ),
             TokenKind::LAMBDA => {return self.lambda()},
+            TokenKind::LEFT_SQUARE => {return self.list()},
             _=> {self.curr_index -= 1}
         }
 
@@ -549,6 +577,8 @@ impl Parser{
     }
 
     fn lambda(&mut self) -> Expression{
+
+        let mut args_list: Vec<Token> = Vec::new();
         
         if !self.check(TokenKind::LEFT_PAREN){
             self.handle_error("Expect '(' after lambda expression");
@@ -594,9 +624,36 @@ impl Parser{
             unreachable!()
         };
         
-        
-
         return Expression::Lambda(args_list, statements);
+    }
+
+    fn list(&mut self) -> Expression{
+
+        let mut content: Vec<Expression> = Vec::new();
+        loop{
+            if !self.check(TokenKind::RIGHT_SQUARE){
+
+                content.push(self.index()); 
+
+                if !self.check(TokenKind::COMMA){
+                    break;
+                }
+
+                self.curr_index += 1; 
+            } else {
+                break;
+            }
+        }
+
+        if !self.check(TokenKind::RIGHT_SQUARE){
+            self.handle_error("Expected ']' after declaring a list");
+        }
+
+        let right_brace_store = self.tokens_list[self.curr_index].clone();
+
+        self.curr_index += 1; 
+        
+        return Expression::List(Box::new(content), right_brace_store);
     }
 
     fn advance(&mut self){

@@ -30,10 +30,23 @@ impl Interpreter {
     pub fn new(is_prime: bool, locals: HashMap<Token, i32> ) -> Self {
 
         let mut environment = Rc::new(RefCell::new(Environment::new(None))); 
-
         let mut edittable_env = environment.borrow_mut();
-        edittable_env.define_default("timeit", Value::Call(Rc::new(Timeit{}), Rc::clone(&environment))); //outputs current time in seconds 
-        edittable_env.define_default("abs", Value::Call(Rc::new(Abs{}), Rc::clone(&environment))); //Absolute value
+
+        //Built-in functions 
+
+        let mut define = |name: &str, func: Box<dyn Func>| {
+            edittable_env.define_default(
+                name, 
+                Value::Call(Rc::from(func), Rc::clone(&environment))
+            )
+        };
+
+        define("timeit", Box::new(Timeit {}));
+        define("abs", Box::new(Abs {}));
+        define("copy", Box::new(Copy {}));
+        define("append", Box::new(Append {}));
+        define("concat", Box::new(Concat {}));
+
         Interpreter{
             global_environment: Rc::clone(&environment),
             is_prime: true,
@@ -149,6 +162,7 @@ impl Interpreter {
             Value::None => {println!("none")},
             Value::String(m) => {println!("{}", m)},
             Value::Call(callee, env) => {println!("<fn {}>", callee.toString())}
+            Value::List(vec) => {println!("{:?}", vec.borrow_mut())}
         }
 
         return Ok(Value::None);
@@ -207,7 +221,7 @@ impl Interpreter {
     fn evaluate(&mut self, expression: Expression) -> Result<Value, BreakResult>{
         //dbg!(&expression);
         match expression{ 
-            Expression::Assign(t, a) => self.evaluate_assign(t, a),
+            Expression::Assign(i, eq, a) => self.evaluate_assign(*i, eq, *a),
             Expression::Binary(l, o, r) => self.evaluate_binary(l, o, r), 
             Expression::Unary(o, r) => self.evaluate_unary(o, r),
             Expression::Call(callee, paren, args) => {self.evaluate_call(*callee, paren, *args)} 
@@ -215,15 +229,42 @@ impl Interpreter {
             Expression::Literal(v) => self.evaluate_literal(v),
             Expression::Grouping(exp) => self.evaluate_grouping(exp), 
             Expression::Variable(t) => self.evaluate_variable(t),
-            Expression::Lambda(args, stmt ) => self.evaluate_lambda(args, *stmt)
+            Expression::Lambda(args, stmt ) => self.evaluate_lambda(args, *stmt),
+            Expression::Index(ls, rb, i) => self.evaluate_index(*ls, rb, *i),
+            Expression::List(content, t) => self.evaluate_list(*content, t)
         }
     }
     
-    fn evaluate_assign(&mut self, t: Token, a: Box<Expression>) -> Result<Value, BreakResult>{
-        let a_ev = self.evaluate(*a)?; 
+    fn evaluate_assign(&mut self, i: Expression, eq: Token, a: Expression) -> Result<Value, BreakResult>{
+        let a_ev = self.evaluate(a)?; 
 
-        self.global_environment.borrow_mut().assign(t, a_ev);
-        return Ok(Value::None); 
+        if let Expression::Variable(t) = i {
+            self.global_environment.borrow_mut().assign(t, a_ev);
+            return Ok(Value::None); 
+        }
+
+        if let Expression::Index(l, t, i) = i {
+            let l_ev = self.evaluate(*l)?;
+            let i_ev = self.evaluate(*i)?;
+
+            let Value::List(ls) = l_ev else {
+                return Err(self.handle_error("Indexing is only allowed for lists", t.line));
+            };
+
+            let Value::Int(index) = i_ev else {
+                return Err(self.handle_error("Only Int are allowed for indices", t.line));
+            };
+
+            if !(0 <= index && index < (ls.borrow().len() as i128)){
+                return Err(self.handle_error(&format!("Index {} out of bounds", index), t.line));
+            }
+
+            ls.borrow_mut()[index as usize] = a_ev; 
+            return Ok(Value::None); 
+        };
+
+        return Err(self.handle_error("Invalid assignment: Only indexes or variables are allowed", eq.line));
+        
     }
 
    fn evaluate_binary(&mut self, l: Box<Expression>, o: Token, r: Box<Expression>) -> Result<Value, BreakResult> {
@@ -438,6 +479,37 @@ impl Interpreter {
         };
 
         return Ok(Value::Call(Rc::new(function_call), Rc::clone(&self.global_environment)))
+    }
+    
+    fn evaluate_index(&mut self, l: Expression, t: Token, i: Expression) -> Result<Value, BreakResult>{
+
+        let l_ev = self.evaluate(l)?;
+        let i_ev = self.evaluate(i)?;
+
+        let Value::List(ls) = l_ev else {
+            return Err(self.handle_error("Indexing is only allowed for lists", t.line));
+        };
+
+        let Value::Int(index) = i_ev else {
+            return Err(self.handle_error("Only Int are allowed for indices", t.line));
+        };
+
+        if !(0 <= index && index < (ls.borrow().len() as i128)){
+            return Err(self.handle_error(&format!("Index {} out of bounds", index), t.line));
+        }
+
+        return Ok(ls.borrow_mut()[index as usize].clone());
+    }
+
+    fn evaluate_list(&mut self, content: Vec<Expression>, t: Token) -> Result<Value, BreakResult>{
+
+        let mut list: Vec<Value> = Vec::new();
+
+        for item in content {
+            list.push(self.evaluate(item)?);
+        }
+
+        return Ok(Value::List(Rc::new(RefCell::new(list))));
     }
 
     // fn handle_error(&self, msg: &str, line: i32) {

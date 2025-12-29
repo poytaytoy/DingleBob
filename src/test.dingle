@@ -1,15 +1,13 @@
-# TEST 4: Late Binding Mutual Recursion
-let isEven = "placeholder";
-let isOdd = "placeholder";
+let ls1 = [1, 2, 3];
+let ls2 = [12, 4, 65];
 
-isEven = lambda(n) {
-    if n == 0 { return true; }
-    return isOdd(n - 1);
-};
+print concat(ls1, ls2);
+print append(ls1, 99990);
 
-isOdd = lambda(n) {
-    if n == 0 { return false; }
-    return isEven(n - 1);
-};
+print ls1; 
 
-print isEven(10); # Expected: true
+let a = copy(ls1);
+a[0] = "beans"; 
+
+print ls1; 
+print a; 
