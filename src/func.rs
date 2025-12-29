@@ -153,11 +153,12 @@ impl Func for Concat {
         }
 
         let Value::List(lst1) = self.expect(input_args[0].clone(), "List")? else {unreachable!()};
-        let Value::List(lst2) = self.expect(input_args[0].clone(), "List")? else {unreachable!()};
+        let Value::List(lst2) = self.expect(input_args[1].clone(), "List")? else {unreachable!()};
 
-        lst1.borrow_mut().append(&mut lst2.borrow_mut().clone());
+        let mut concat_lst = lst1.borrow().clone();
+        concat_lst.append(&mut lst2.borrow().clone());
 
-        return Ok(Value::List(Rc::clone(&lst1)));
+        return Ok(Value::List(Rc::new(RefCell::new(concat_lst))));
     }
 }
 

@@ -18,6 +18,20 @@ impl Environment {
         }
     }
 
+    pub fn clone(&self) -> Self {
+
+        let mut dummy_env_superior = None; 
+        
+        if !self.env_superior.is_none(){
+            dummy_env_superior = Some(Rc::new(RefCell::new(self.env_superior.clone().unwrap().borrow().clone())));
+        }
+
+        Environment{
+            env_superior: dummy_env_superior, 
+            hashMap: self.hashMap.clone()
+        }
+    }
+
     pub fn define(&mut self, var: Token, value: Value) -> Result<Value, BreakResult> {
         if self.hashMap.contains_key(&var.lexeme) {
             return Err(BreakResult::Error(self.handle_error(&format!("Variable '{}' has already been declared", &var.lexeme), var.line)));

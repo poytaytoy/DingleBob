@@ -1,3 +1,5 @@
+let initial = timeit(); 
+
 let ls1 = [1, 2, 3];
 let ls2 = [12, 4, 65];
 
@@ -11,3 +13,5 @@ a[0] = "beans";
 
 print ls1; 
 print a; 
+
+print "Time: " + (timeit() - initial);
