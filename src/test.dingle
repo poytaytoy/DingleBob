@@ -1,9 +1,4 @@
 # --- TEST 2: Mutation Capture ---
-let x = "original";
+let x = lambda(x) {print x};
 
-define check() {
-    print x;
-}
-
-x = "mutated";
-check(); # Expected: mutated (In snapshot mode, this was "original")
+x ("mutated");

@@ -9,6 +9,7 @@ use crate::environment::Environment;
 use std::cell::Ref;
 use std::clone;
 use std::collections::HashMap;
+use std::env::args;
 use std::hash::Hash;
 use std::process; 
 use std::rc::Rc; 
@@ -213,7 +214,8 @@ impl Interpreter {
             Expression::Logical(l,o ,r ) => self.evaluate_logical(*l, o, *r),
             Expression::Literal(v) => self.evaluate_literal(v),
             Expression::Grouping(exp) => self.evaluate_grouping(exp), 
-            Expression::Variable(t) => self.evaluate_variable(t)
+            Expression::Variable(t) => self.evaluate_variable(t),
+            Expression::Lambda(args, stmt ) => self.evaluate_lambda(args, *stmt)
         }
     }
     
@@ -427,6 +429,15 @@ impl Interpreter {
         };
 
         self.global_environment.borrow_mut().get_at(token, *steps)
+    }
+
+    fn evaluate_lambda(&mut self, args_list: Vec<Token>, bdy: Vec<Statement>) -> Result<Value, BreakResult>{
+
+        let function_call = Lambda {
+           args_list: args_list, statement_list: bdy
+        };
+
+        return Ok(Value::Call(Rc::new(function_call), Rc::clone(&self.global_environment)))
     }
 
     // fn handle_error(&self, msg: &str, line: i32) {

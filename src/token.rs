@@ -15,6 +15,8 @@ pub enum TokenKind {
     IDENTIFIER,
     STRING,  
 
+    LAMBDA,
+
     EOF 
 }
 

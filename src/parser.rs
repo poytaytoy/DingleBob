@@ -528,6 +528,7 @@ impl Parser{
                 }
             }
             TokenKind::IDENTIFIER => return Expression::Variable(literal.clone() ),
+            TokenKind::LAMBDA => {return self.lambda()},
             _=> {self.curr_index -= 1}
         }
 
@@ -547,7 +548,52 @@ impl Parser{
         return Expression::Literal(Value::None);
     }
 
+    fn lambda(&mut self) -> Expression{
 
+        if !self.check(TokenKind::LEFT_PAREN){
+            self.handle_error("Expect '(' after lambda expression");
+        }
+
+        self.curr_index += 1;
+
+        let mut args_list: Vec<Token> = Vec::new();
+
+        loop{
+            if !self.check(TokenKind::RIGHT_PAREN){
+
+                if !self.check(TokenKind::IDENTIFIER){
+                    self.handle_error("Expect argument names in lambda expression");
+                }
+                args_list.push((&self.tokens_list[self.curr_index]).clone()); 
+
+                self.curr_index += 1;
+
+                if !self.check(TokenKind::COMMA){
+                    break;
+                }
+
+                self.curr_index += 1; 
+            }
+        }
+
+        if !self.check(TokenKind::RIGHT_PAREN){
+            self.handle_error("Expected ')' after declaring arguments in lambda expression");
+        }
+
+        self.curr_index += 1; 
+
+        let statement = self.statement(); 
+
+        if !matches!(statement, Statement::Block(_)){
+            self.handle_error("Expected a scope for the body of a lambda expression");
+        }
+
+        let Statement::Block(statements) = statement else {
+            unreachable!()
+        };
+
+        return Expression::Lambda(args_list, statements);
+    }
 
     fn advance(&mut self){
         if !(self.atEnd()) {self.curr_index += 1}

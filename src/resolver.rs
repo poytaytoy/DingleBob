@@ -103,7 +103,8 @@ impl Resolver{
             Expression::Logical(l, o, r) => { self.resolve_logical(*l, o, *r); }
             Expression::Literal(v) => { self.resolve_literal(v); }
             Expression::Grouping(exp) => { self.resolve_grouping(*exp); }
-            Expression::Variable(t) => { self.resolve_variable(t); }
+            Expression::Variable(t) => { self.resolve_variable(t); },
+            Expression::Lambda(t, stmt) => {self.resolve_lambda(t, *stmt)}
         }
     }
 
@@ -153,6 +154,19 @@ impl Resolver{
         }
 
         //dbg!(&self.locals);
+    }
+
+    fn resolve_lambda(&mut self, t: Vec<Token>, stmts: Vec<Statement>){
+        if !self.stack.is_empty(){
+            self.begin_scope();
+
+            for args in t {
+                self.stack[0].insert(args.lexeme, true);
+            }
+            self.resolve_block(stmts);
+            
+            self.end_scope();
+        }
     }
 
     fn begin_scope(&mut self) {

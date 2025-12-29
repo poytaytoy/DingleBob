@@ -18,7 +18,8 @@ pub enum Expression {
     Logical(Box<Expression>, Token, Box<Expression>),
     Literal(Value), 
     Grouping(Box<Expression>),
-    Variable(Token)
+    Variable(Token),
+    Lambda(Vec<Token>, Box<Vec<Statement>>), 
 }
 
 #[derive(Clone)]

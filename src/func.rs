@@ -97,7 +97,50 @@ impl Func for Function {
 
     fn call(&self, mut interpreter: Interpreter, input_args: Vec<Value>) -> Result<Value, BreakResult>  {
         if input_args.len() != self.args_list.len() { 
-            return Err(BreakResult::Error(String::from("Argument size mismatch; Expected 1 argument(s)")));
+            return Err(BreakResult::Error(format!("Argument size mismatch; Expected {} argument(s)", self.args_list.len())));
+        }
+
+        let mut var_list: Vec<Statement> = Vec::new(); 
+        for n in 0..input_args.len(){
+            var_list.push(Statement::Var((&self.args_list[n]).clone(), Expression::Literal(input_args[n].clone())))
+        }
+
+        var_list.push(Statement::Block(Box::new(self.statement_list.clone())));
+
+        match interpreter.interpret(vec![Statement::Block(Box::new(var_list))]) {
+            Ok(_) => {return Ok(Value::None);},
+            Err(BreakResult::Return(t,v )) => {return Ok(v)},
+            Err(br) => {return Err(br)}
+        }
+    }
+    
+}
+
+pub struct Lambda{
+    pub args_list: Vec<Token>, 
+    pub statement_list: Vec<Statement>
+}
+
+impl Func for Lambda {
+
+    fn toString(&self) -> String {
+        let mut text = String::from("Lambda(");
+
+        text += " ";
+
+        for args in &self.args_list{
+            text += &args.lexeme ; 
+            text += " ";
+        }
+
+        text += ")";
+
+        return text; 
+    }
+
+    fn call(&self, mut interpreter: Interpreter, input_args: Vec<Value>) -> Result<Value, BreakResult>  {
+        if input_args.len() != self.args_list.len() { 
+            return Err(BreakResult::Error(format!("Argument size mismatch; Expected {} argument(s)", self.args_list.len())));
         }
 
         let mut var_list: Vec<Statement> = Vec::new(); 

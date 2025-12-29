@@ -102,7 +102,6 @@ impl<'a> Scanner<'a> {
 
         let kind = match lexeme.as_str() {
             "and" => TokenKind::AND,
-            "class" => TokenKind::CLASS,
             "else" => TokenKind::ELSE,
             "false" => TokenKind::FALSE,
             "for" => TokenKind::FOR,
@@ -111,13 +110,13 @@ impl<'a> Scanner<'a> {
             "or" => TokenKind::OR,
             "print" => TokenKind::PRINT,
             "return" => TokenKind::RETURN,
-            "super" => TokenKind::SUPER,
             "this" => TokenKind::THIS,
             "true" => TokenKind::TRUE,
             "let" => TokenKind::LET,
             "while" => TokenKind::WHILE,
             "define" => TokenKind::DEFINE,
             "break" => TokenKind::BREAK,
+            "lambda" => TokenKind::LAMBDA,
             _ => TokenKind::IDENTIFIER,
         };
         
