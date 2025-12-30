@@ -6,9 +6,9 @@ use crate::ast::Value;
 use crate::ast::Statement; 
 use std::env::args;
 use std::ops::Index;
-use std::process; 
 use std::mem;
-use std::thread::current;
+
+type ParseResult<T> = Result<T, String>;
 
 pub struct Parser {
     tokens_list: Vec<Token>,
@@ -30,20 +30,19 @@ impl Parser{
         (&self.tokens_list[self.curr_index]).kind == TokenKind::EOF
     }
 
-    pub fn parse(&mut self) -> Vec<Statement> {
+    pub fn parse(&mut self) -> ParseResult<Vec<Statement>> {
 
         let mut statement_list = Vec::new(); 
         
-        while !(self.atEnd()) {
-            let dec = self.declaration();
-            //dbg!(&dec);
+        while !self.atEnd() {
+            let dec = self.declaration()?;
             statement_list.push(dec);
         }
 
-        return statement_list; 
+        Ok(statement_list)
     }
 
-    fn declaration(&mut self) -> Statement{ 
+    fn declaration(&mut self) -> ParseResult<Statement>{ 
 
         let currentToken = &self.tokens_list[self.curr_index]; 
         self.curr_index += 1; 
@@ -54,51 +53,48 @@ impl Parser{
             _ => {self.curr_index -= 1}   
         }
 
-        return self.statement();
+        self.statement()
     }
 
-    fn varDeclaration(&mut self) -> Statement{
+    fn varDeclaration(&mut self) -> ParseResult<Statement>{
         
         if self.check(TokenKind::IDENTIFIER){
             let token: Token = (&self.tokens_list[self.curr_index]).clone();
             self.curr_index += 1; 
 
             if self.match_token(&[TokenKind::EQUAL]){
-                let expr = self.expression(); 
+                let expr = self.expression()?; 
 
                 if self.check(TokenKind::SEMICOLON){
                     self.curr_index += 1; 
-
-                    return Statement::Var(token, expr)
+                    return Ok(Statement::Var(token, expr));
                 }
 
-                self.handle_error("Expected ';' after variable declaration.");
+                return self.handle_error("Expected ';' after variable declaration.");
             }
 
             if self.check(TokenKind::SEMICOLON){
                 self.curr_index += 1; 
-                return Statement::Var(token, Expression::Literal(Value::None));
+                return Ok(Statement::Var(token, Expression::Literal(Value::None)));
             }
 
-            self.handle_error("Expected '=' or ';' after variable name in variable declaration.");
+            return self.handle_error("Expected '=' or ';' after variable name in variable declaration.");
         }
 
-        self.handle_error("Expected an identifier after 'let' (variable name)."); 
-
-        unreachable!();
+        self.handle_error("Expected an identifier after 'let' (variable name).")
     }
 
-    fn function(&mut self) -> Statement {
+    fn function(&mut self) -> ParseResult<Statement> {
         
         if !self.check(TokenKind::IDENTIFIER){
-            self.handle_error("Expected an identifier after 'define' (function name).");
+            return self.handle_error("Expected an identifier after 'define' (function name).");
         }
 
         let name = (&self.tokens_list[self.curr_index]).clone(); 
         self.curr_index += 1; 
 
         if !self.check(TokenKind::LEFT_PAREN){
-           self.handle_error("Expected '(' after function name in function declaration.");
+            return self.handle_error("Expected '(' after function name in function declaration.");
         }
 
         let mut args_list: Vec<Token> = Vec::new();
@@ -108,7 +104,7 @@ impl Parser{
         if !self.check(TokenKind::RIGHT_PAREN){
             loop {
                 if !self.check(TokenKind::IDENTIFIER){
-                    self.handle_error("Expected an identifier as a parameter name in function declaration.");
+                    return self.handle_error("Expected an identifier as a parameter name in function declaration.");
                 }
 
                 args_list.push((&self.tokens_list[self.curr_index]).clone()); 
@@ -124,26 +120,28 @@ impl Parser{
         }
 
         if self.check(TokenKind::RIGHT_PAREN){
-            if args_list.len() > 255 {self.handle_error("Too many parameters: functions can have at most 255 parameters.")};
+            if args_list.len() > 255 {
+                return self.handle_error("Too many parameters: functions can have at most 255 parameters.");
+            }
             self.curr_index += 1; 
         } else {
-            self.handle_error("Expected ')' after parameter list.");
+            return self.handle_error("Expected ')' after parameter list.");
         } 
 
         if !self.check(TokenKind::LEFT_BRACE){
-           self.handle_error("Expected '{' to start function body.");
+            return self.handle_error("Expected '{' to start function body.");
         }
 
         self.curr_index += 1;
 
-        let Statement::Block(statements) = self.block() else {
+        let Statement::Block(statements) = self.block()? else {
             unreachable!()
         };
 
-        Statement::Function(name, args_list, statements)
+        Ok(Statement::Function(name, args_list, statements))
     }
 
-    fn statement(&mut self) -> Statement{
+    fn statement(&mut self) -> ParseResult<Statement>{
 
         let currentToken = &self.tokens_list[self.curr_index]; 
         self.curr_index += 1; 
@@ -157,334 +155,305 @@ impl Parser{
             TokenKind::BREAK => {
                 let statement = Statement::Break(currentToken.clone()); 
                 if !self.check(TokenKind::SEMICOLON){
-                    self.handle_error("Expected ';' after 'break'.");
+                    return self.handle_error("Expected ';' after 'break'.");
                 }
                 self.curr_index += 1; 
-                return statement; 
+                return Ok(statement);
             }, 
             TokenKind::LEFT_BRACE => return self.block(),
             _ => {self.curr_index -= 1}   
         }
 
-       return self.expressionStatement();
+        self.expressionStatement()
     }
 
-    fn forStatement(&mut self) -> Statement{
+    fn forStatement(&mut self) -> ParseResult<Statement>{
         if !self.check(TokenKind::LEFT_PAREN) {
-            self.handle_error("Expected '(' after 'for'.");
+            return self.handle_error("Expected '(' after 'for'.");
         }
 
         self.curr_index += 1; 
 
-        let mut intializer: Option<Statement>;
+        let intializer: Option<Statement>;
         if self.check(TokenKind::SEMICOLON){
             self.curr_index += 1; 
             intializer = None; 
         } else if self.check(TokenKind::LET)  {
             self.curr_index += 1; 
-            intializer = Some(self.varDeclaration());
+            intializer = Some(self.varDeclaration()?);
         } else {
-            intializer = Some(self.expressionStatement());
+            intializer = Some(self.expressionStatement()?);
         }
 
         let mut condition = None; 
-        if !(self.check(TokenKind::SEMICOLON)){
-            condition = Some(self.expression()); 
+        if !self.check(TokenKind::SEMICOLON){
+            condition = Some(self.expression()?); 
         }
-        if !(self.check(TokenKind::SEMICOLON)){
-           self.handle_error("Expected ';' after loop condition in 'for' statement.");
+        if !self.check(TokenKind::SEMICOLON){
+            return self.handle_error("Expected ';' after loop condition in 'for' statement.");
         }
 
         self.curr_index += 1; 
 
         let mut increment = None; 
-        if !(self.check(TokenKind::RIGHT_PAREN)){
-            increment = Some(self.expression()); 
+        if !self.check(TokenKind::RIGHT_PAREN){
+            increment = Some(self.expression()?); 
         }
 
-        if !(self.check(TokenKind::RIGHT_PAREN)){
-            self.handle_error("Expected ')' after for-clause list.");
+        if !self.check(TokenKind::RIGHT_PAREN){
+            return self.handle_error("Expected ')' after for-clause list.");
         }
 
         self.curr_index += 1; 
 
-        let mut body = self.statement(); 
+        let mut body = self.statement()?; 
 
         if !matches!(body, Statement::Block(_)){
-            self.handle_error("Expected a block '{ ... }' after 'for (...)'.");
+            return self.handle_error("Expected a block '{ ... }' after 'for (...)'.");
         }
 
-        if !(increment.is_none()) {
-
+        if increment.is_some() {
             let mut s_array = Vec::new(); 
             s_array.push(body); 
             s_array.push(Statement::Expression(increment.unwrap()));
-
             body = Statement::Block(Box::new(s_array));
         }
 
-        if condition.is_none(){
-            condition = Some(Expression::Literal(Value::Bool(true)));
-        }
+        let cond = condition.unwrap_or(Expression::Literal(Value::Bool(true)));
+        body = Statement::While(cond, Box::new(body));
 
-        body = Statement::While(condition.unwrap(), Box::new(body));
-
-        if !(intializer.is_none()){
-
+        if intializer.is_some() {
             let mut s_array = Vec::new(); 
             s_array.push(intializer.unwrap()); 
             s_array.push(body); 
-
             body = Statement::Block(Box::new(s_array));
         }
 
-        return body; 
+        Ok(body)
     }
 
-    fn ifStatement(&mut self) -> Statement{ 
-        let expr = self.expression(); 
-        let thenStatement = self.statement();
+    fn ifStatement(&mut self) -> ParseResult<Statement>{ 
+        let expr = self.expression()?; 
+        let thenStatement = self.statement()?;
 
-        if !(matches!(thenStatement, Statement::Block(_))){
-            self.handle_error("Expected a block '{ ... }' after 'if' condition.");
+        if !matches!(thenStatement, Statement::Block(_)){
+            return self.handle_error("Expected a block '{ ... }' after 'if' condition.");
         }
 
         let mut elseStatement = Statement::Expression(Expression::Literal(Value::None));
 
         if self.check(TokenKind::ELSE){
             self.curr_index += 1; 
-            elseStatement = self.statement();
+            elseStatement = self.statement()?;
 
-            if !(matches!(elseStatement, Statement::Block(_))){
-                self.handle_error("Expected a block '{ ... }' after 'else'.");
+            if !matches!(elseStatement, Statement::Block(_)){
+                return self.handle_error("Expected a block '{ ... }' after 'else'.");
             }
         }
 
-        return Statement::If(expr, Box::new(thenStatement), Box::new(elseStatement));   
-
+        Ok(Statement::If(expr, Box::new(thenStatement), Box::new(elseStatement)))
     }
 
-    fn printStatement(&mut self) -> Statement {
+    fn printStatement(&mut self) -> ParseResult<Statement> {
 
-        let expr = self.expression(); 
+        let expr = self.expression()?; 
 
         if self.check(TokenKind::SEMICOLON) {
             self.curr_index += 1; 
         } else {
-            self.handle_error("Expected ';' after expression in 'print' statement.");
+            return self.handle_error("Expected ';' after expression in 'print' statement.");
         }
 
-        return Statement::Print(expr); 
+        Ok(Statement::Print(expr))
     }
 
-    fn returnStatement(&mut self) -> Statement {
+    fn returnStatement(&mut self) -> ParseResult<Statement> {
         let return_token = (&self.tokens_list[self.curr_index]).clone(); 
         let mut value = Expression::Literal(Value::None);
 
         if !self.check(TokenKind::SEMICOLON){
-            value = self.expression(); 
+            value = self.expression()?; 
         }
 
         if !self.check(TokenKind::SEMICOLON){
-            self.handle_error("Expected ';' after return statement.");
+            return self.handle_error("Expected ';' after return statement.");
         }
 
         self.curr_index += 1; 
 
-        return Statement::Return(return_token, value);
+        Ok(Statement::Return(return_token, value))
     }   
 
-    fn whileStatement(&mut self) -> Statement {
+    fn whileStatement(&mut self) -> ParseResult<Statement> {
 
-        let expr = self.expression(); 
-        let statement = self.statement(); 
+        let expr = self.expression()?; 
+        let statement = self.statement()?; 
 
         if !matches!(statement, Statement::Block(_)){
-            self.handle_error("Expected a block '{ ... }' after 'while' condition.");
+            return self.handle_error("Expected a block '{ ... }' after 'while' condition.");
         }
 
-        Statement::While(expr, Box::new(statement))
+        Ok(Statement::While(expr, Box::new(statement)))
     }
 
-    fn expressionStatement(&mut self) -> Statement {
+    fn expressionStatement(&mut self) -> ParseResult<Statement> {
 
-        let expr = self.expression(); 
+        let expr = self.expression()?; 
 
         if self.check(TokenKind::SEMICOLON) {
             self.curr_index += 1; 
         } else {
-            self.handle_error("Expected ';' after expression.");
+            return self.handle_error("Expected ';' after expression.");
         }
 
-        return Statement::Expression(expr); 
+        Ok(Statement::Expression(expr))
     }
 
-    fn block(&mut self) -> Statement{
+    fn block(&mut self) -> ParseResult<Statement>{
 
         let mut statement = Vec::new(); 
 
-        while !(self.check(TokenKind::RIGHT_BRACE)) && !self.atEnd(){
-            statement.push(self.declaration()); 
+        while !self.check(TokenKind::RIGHT_BRACE) && !self.atEnd(){
+            statement.push(self.declaration()?); 
         }
 
-        if (self.check(TokenKind::RIGHT_BRACE)){
+        if self.check(TokenKind::RIGHT_BRACE){
             self.curr_index += 1; 
-            return Statement::Block(Box::new(statement)); 
+            return Ok(Statement::Block(Box::new(statement))); 
         }
         
-        self.handle_error("Expected '}' to close block.");
-        Statement::Block(Box::new(statement))
+        self.handle_error("Expected '}' to close block.")
     }
 
-    fn expression(&mut self) -> Expression{
-        return self.assignment(); 
+    fn expression(&mut self) -> ParseResult<Expression>{
+        self.assignment()
     }
 
-    fn assignment(&mut self) -> Expression{ 
-        let expr = self.index(); 
+    fn assignment(&mut self) -> ParseResult<Expression>{ 
+        let expr = self.index()?; 
 
         if self.check(TokenKind::EQUAL){
-
             let equal_store = (&self.tokens_list[self.curr_index]).clone();
             self.curr_index += 1;
-            let mut value = self.expression(); 
-
-            return Expression::Assign(Box::new(expr), equal_store, Box::new(value));
+            let value = self.expression()?; 
+            return Ok(Expression::Assign(Box::new(expr), equal_store, Box::new(value)));
         }
 
-        return expr; 
+        Ok(expr)
     }
 
-    fn index(&mut self) -> Expression{
-        let left_expr = self.or(); 
+    fn index(&mut self) -> ParseResult<Expression>{
+        let left_expr = self.or()?; 
 
         if self.check(TokenKind::LEFT_SQUARE){
             self.curr_index += 1; 
-            let right_expr = self.expression(); 
+            let right_expr = self.expression()?; 
             
             if !self.check(TokenKind::RIGHT_SQUARE){
-                self.handle_error("Expected ']' to close index expression.");
+                return self.handle_error("Expected ']' to close index expression.");
             }
 
             let right_brace_store = (&self.tokens_list[self.curr_index]).clone();
-
             self.curr_index += 1; 
 
-            return Expression::Index(Box::new(left_expr), right_brace_store, Box::new(right_expr));
+            return Ok(Expression::Index(Box::new(left_expr), right_brace_store, Box::new(right_expr)));
         }
 
-        return left_expr; 
+        Ok(left_expr)
     }
 
-
-    fn or(&mut self) -> Expression{
-        let mut expr = self.and(); 
+    fn or(&mut self) -> ParseResult<Expression>{
+        let mut expr = self.and()?; 
         
         while self.check(TokenKind::OR){
             let op = (&self.tokens_list[self.curr_index]).clone(); 
             self.curr_index += 1; 
-            let right = self.equality(); 
-
+            let right = self.equality()?; 
             expr = Expression::Logical(Box::new(expr), op, Box::new(right)); 
         }
 
-        return expr; 
+        Ok(expr)
     }
 
-    fn and(&mut self) -> Expression{
-        let mut expr = self.equality(); 
+    fn and(&mut self) -> ParseResult<Expression>{
+        let mut expr = self.equality()?; 
 
         while self.check(TokenKind::AND){
             let op = (&self.tokens_list[self.curr_index]).clone(); 
             self.curr_index += 1; 
-            let right = self.equality(); 
-
+            let right = self.equality()?; 
             expr = Expression::Logical(Box::new(expr), op, Box::new(right)); 
         }
 
-        return expr; 
+        Ok(expr)
     }
 
-    fn equality(&mut self) -> Expression{
-
-        let mut expr: Expression  = self.comparison();
-
+    fn equality(&mut self) -> ParseResult<Expression>{
+        let mut expr: Expression  = self.comparison()?;
         let type_list = [TokenKind::BANG_EQUAL, TokenKind::EQUAL_EQUAL];
 
-        while (self.match_token(&type_list)){
+        while self.match_token(&type_list){
             let operator: Token  = (&self.tokens_list[self.curr_index - 1]).clone();
-            let right: Expression  = self.comparison(); 
-
+            let right: Expression  = self.comparison()?; 
             expr = Expression::Binary(Box::new(expr), operator, Box::new(right)); 
         }
 
-        return expr; 
+        Ok(expr)
     }
 
-    fn comparison(&mut self) -> Expression{
-
-        let mut expr: Expression  = self.term();
-
+    fn comparison(&mut self) -> ParseResult<Expression>{
+        let mut expr: Expression  = self.term()?;
         let type_list = [TokenKind::GREATER, TokenKind::GREATER_EQUAL, TokenKind::LESS, TokenKind::LESS_EQUAL];
 
-        while (self.match_token(&type_list)){
+        while self.match_token(&type_list){
             let operator: Token  = (&self.tokens_list[self.curr_index - 1]).clone();
-            let right: Expression  = self.term(); 
-
+            let right: Expression  = self.term()?; 
             expr = Expression::Binary(Box::new(expr), operator, Box::new(right)); 
         }
 
-        return expr; 
+        Ok(expr)
     }
 
-    fn term(&mut self) -> Expression{
-
-        let mut expr: Expression  = self.factor();
-
+    fn term(&mut self) -> ParseResult<Expression>{
+        let mut expr: Expression  = self.factor()?;
         let type_list = [TokenKind::MINUS, TokenKind::PLUS];
 
-        while (self.match_token(&type_list)){
+        while self.match_token(&type_list){
             let operator: Token  = (&self.tokens_list[self.curr_index - 1]).clone();
-            let right: Expression  = self.factor(); 
-
+            let right: Expression  = self.factor()?; 
             expr = Expression::Binary(Box::new(expr), operator, Box::new(right)); 
         }
 
-        return expr; 
+        Ok(expr)
     }
 
-    fn factor(&mut self) -> Expression{
-
-        let mut expr: Expression  = self.unary();
-
+    fn factor(&mut self) -> ParseResult<Expression>{
+        let mut expr: Expression  = self.unary()?;
         let type_list = [TokenKind::SLASH, TokenKind::STAR, TokenKind::PERCENT];
 
-        while (self.match_token(&type_list)){
+        while self.match_token(&type_list){
             let operator: Token  = (&self.tokens_list[self.curr_index - 1]).clone();
-            let right: Expression  = self.unary(); 
-
+            let right: Expression  = self.unary()?; 
             expr = Expression::Binary(Box::new(expr), operator, Box::new(right)); 
         }
 
-        return expr; 
+        Ok(expr)
     }
 
-    fn unary(&mut self) -> Expression{
-
+    fn unary(&mut self) -> ParseResult<Expression>{
         let type_list = [TokenKind::BANG, TokenKind::MINUS];
 
-        while (self.match_token(&type_list)){
+        while self.match_token(&type_list){
             let operator: Token  = (&self.tokens_list[self.curr_index - 1]).clone();
-            let right: Expression  = self.unary(); 
-
-            return Expression::Unary(operator, Box::new(right)); 
+            let right: Expression  = self.unary()?; 
+            return Ok(Expression::Unary(operator, Box::new(right))); 
         }
 
-        return self.call(); 
+        self.call()
     }
 
-    fn call(&mut self) -> Expression {
-        let mut expr = self.primary(); 
+    fn call(&mut self) -> ParseResult<Expression> {
+        let mut expr = self.primary()?; 
 
         loop{
             if !self.check(TokenKind::LEFT_PAREN){
@@ -492,86 +461,80 @@ impl Parser{
             }
 
             let mut args_list: Vec<Expression> = Vec::new(); 
-
             self.curr_index += 1;
 
             if !self.check(TokenKind::RIGHT_PAREN){
-                args_list.push(self.expression()); 
+                args_list.push(self.expression()?); 
 
                 while self.check(TokenKind::COMMA){
                     self.curr_index += 1; 
-                    args_list.push(self.expression());
+                    args_list.push(self.expression()?);
                 }
             }
 
             if self.check(TokenKind::RIGHT_PAREN){
-                if args_list.len() > 255 {self.handle_error("Too many arguments: function calls can have at most 255 arguments.")};
+                if args_list.len() > 255 {
+                    return self.handle_error("Too many arguments: function calls can have at most 255 arguments.");
+                }
                 expr = Expression::Call(Box::new(expr), (&self.tokens_list[self.curr_index]).clone(), Box::new(args_list));
                 self.curr_index += 1; 
             } else {
-                self.handle_error("Expected ')' after argument list.");
+                return self.handle_error("Expected ')' after argument list.");
             }
-
         }
 
-        return expr; 
+        Ok(expr)
     }
 
-    fn primary(&mut self)->Expression{
+    fn primary(&mut self) -> ParseResult<Expression>{
 
-        if (self.atEnd()){
-            self.handle_error("Unexpected end of input.");
+        if self.atEnd(){
+            return self.handle_error("Unexpected end of input.");
         }
 
         let literal: &Token = &self.tokens_list[self.curr_index]; 
-        
         self.curr_index += 1;
 
         match &literal.kind {
-            TokenKind::FALSE => return Expression::Literal(Value::Bool(false)),
-            TokenKind::TRUE => return Expression::Literal(Value::Bool(true)),
-            TokenKind::NONE => return Expression::Literal(Value::None),
-            TokenKind::STRING => return Expression::Literal(Value::String(literal.lexeme.clone())),
+            TokenKind::FALSE => return Ok(Expression::Literal(Value::Bool(false))),
+            TokenKind::TRUE => return Ok(Expression::Literal(Value::Bool(true))),
+            TokenKind::NONE => return Ok(Expression::Literal(Value::None)),
+            TokenKind::STRING => return Ok(Expression::Literal(Value::String(literal.lexeme.clone()))),
             TokenKind::NUMBER => {
-                let mut resulti = literal.lexeme.parse::<i128>(); 
-                let mut resultf = literal.lexeme.parse::<f64>(); 
+                let resulti = literal.lexeme.parse::<i128>(); 
+                let resultf = literal.lexeme.parse::<f64>(); 
 
-                if resulti.is_ok() {
-                    return Expression::Literal(Value::Int(resulti.unwrap()));
-                } else if resultf.is_ok() { 
-                    return Expression::Literal(Value::Float(resultf.unwrap()));
+                if let Ok(i) = resulti {
+                    return Ok(Expression::Literal(Value::Int(i)));
+                } else if let Ok(f) = resultf {
+                    return Ok(Expression::Literal(Value::Float(f)));
                 } else {
-                    self.handle_error(&format!("Invalid number literal near '{}'.", &self.tokens_list[self.curr_index].lexeme));
+                    return self.handle_error(&format!("Invalid number literal near '{}'.", literal.lexeme));
                 }
             }
-            TokenKind::IDENTIFIER => return Expression::Variable(literal.clone() ),
-            TokenKind::LAMBDA => {return self.lambda()},
-            TokenKind::LEFT_SQUARE => {return self.list()},
-            _=> {self.curr_index -= 1}
+            TokenKind::IDENTIFIER => return Ok(Expression::Variable(literal.clone())),
+            TokenKind::LAMBDA => return Ok(self.lambda()?),
+            TokenKind::LEFT_SQUARE => return Ok(self.list()?),
+            _ => { self.curr_index -= 1; }
         }
 
         if self.match_token(&[TokenKind::LEFT_PAREN]){
-            let expression:Expression = self.expression();
+            let expression:Expression = self.expression()?;
 
             if self.match_token(&[TokenKind::RIGHT_PAREN]){
-                return Expression::Grouping(Box::new(expression)); 
+                return Ok(Expression::Grouping(Box::new(expression))); 
             }
             
-            self.handle_error("Expected ')' to close parenthesized expression.");
-
+            return self.handle_error("Expected ')' to close parenthesized expression.");
         }
 
-        self.handle_error(&format!("Unexpected token '{}'.", &self.tokens_list[self.curr_index].lexeme));
-
-        return Expression::Literal(Value::None);
+        self.handle_error(&format!("Unexpected token '{}'.", &self.tokens_list[self.curr_index].lexeme))
     }
 
-    fn lambda(&mut self) -> Expression{
+    fn lambda(&mut self) -> ParseResult<Expression>{
 
-        let mut args_list: Vec<Token> = Vec::new();
-        
         if !self.check(TokenKind::LEFT_PAREN){
-            self.handle_error("Expected '(' after 'lambda'.");
+            return self.handle_error("Expected '(' after 'lambda'.");
         }
         
         self.curr_index += 1;
@@ -582,7 +545,7 @@ impl Parser{
             if !self.check(TokenKind::RIGHT_PAREN){
 
                 if !self.check(TokenKind::IDENTIFIER){
-                    self.handle_error("Expected an identifier as a parameter name in lambda expression.");
+                    return self.handle_error("Expected an identifier as a parameter name in lambda expression.");
                 }
                 args_list.push((&self.tokens_list[self.curr_index]).clone()); 
 
@@ -599,31 +562,30 @@ impl Parser{
         }
 
         if !self.check(TokenKind::RIGHT_PAREN){
-            self.handle_error("Expected ')' after lambda parameter list.");
+            return self.handle_error("Expected ')' after lambda parameter list.");
         }
 
         self.curr_index += 1; 
 
-        let statement = self.statement(); 
+        let statement = self.statement()?; 
 
         if !matches!(statement, Statement::Block(_)){
-            self.handle_error("Expected a block '{ ... }' for lambda body.");
+            return self.handle_error("Expected a block '{ ... }' for lambda body.");
         }
 
         let Statement::Block(statements) = statement else {
             unreachable!()
         };
         
-        return Expression::Lambda(args_list, statements);
+        Ok(Expression::Lambda(args_list, statements))
     }
 
-    fn list(&mut self) -> Expression{
+    fn list(&mut self) -> ParseResult<Expression>{
 
         let mut content: Vec<Expression> = Vec::new();
         loop{
             if !self.check(TokenKind::RIGHT_SQUARE){
-
-                content.push(self.index()); 
+                content.push(self.index()?); 
 
                 if !self.check(TokenKind::COMMA){
                     break;
@@ -636,31 +598,22 @@ impl Parser{
         }
 
         if !self.check(TokenKind::RIGHT_SQUARE){
-            self.handle_error("Expected ']' to close list literal.");
+            return self.handle_error("Expected ']' to close list literal.");
         }
 
         let right_brace_store = self.tokens_list[self.curr_index].clone();
-
         self.curr_index += 1; 
         
-        return Expression::List(Box::new(content), right_brace_store);
-    }
-
-    fn advance(&mut self){
-        if !(self.atEnd()) {self.curr_index += 1}
+        Ok(Expression::List(Box::new(content), right_brace_store))
     }
 
     fn check(&mut self, kind:TokenKind) -> bool{
-        if (self.atEnd()) {return false;} 
-
+        if self.atEnd() { return false; }
         (&self.tokens_list[self.curr_index]).kind == kind
     }
 
     fn match_token(&mut self, args: &[TokenKind]) -> bool{
-
-        if (self.atEnd()){
-            return false; 
-        }
+        if self.atEnd(){ return false; }
 
         for tokenKind in args{
             if self.check(*tokenKind){
@@ -672,11 +625,13 @@ impl Parser{
         false
     }
 
-    fn handle_error(&self, msg: &str) {
+    fn handle_error<T>(&self, msg: &str) -> ParseResult<T> {
+        // best-effort line reporting even if curr_index is at edge
+        let line = self.tokens_list
+            .get(self.curr_index)
+            .map(|t| t.line)
+            .unwrap_or_else(|| self.tokens_list.last().map(|t| t.line).unwrap_or(0));
 
-        let line = &self.tokens_list[self.curr_index].line;
-
-        eprintln!("[Line {}] Parser Error: {}", line, msg);
-        process::exit(1);
+        Err(format!("[Line {}] Parser Error: {}", line, msg))
     }
 }

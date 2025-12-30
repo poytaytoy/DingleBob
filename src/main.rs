@@ -26,57 +26,141 @@ mod func;
 mod resolver;
 use resolver::Resolver;
 
-//TODO Things to look into 
-//1. lifetimes how the <'a> work and what the fuck is going on with them 
-//2. how crates and libs work in rust  
+fn run_source(source: &str, debug: bool) {
+    let mut resolver = Resolver::new();
+    let mut interpreter = Interpreter::new(true, resolver.give_local());
+    let token_list = scan(source, debug);
 
-fn main() -> io::Result<()> {
+    let token_result = scan(source, debug);
 
-    println!("Dinglebob Interpreter \n"); 
+    if let Err(msg) = token_result{
+        eprintln!("{}", msg);
+        return (); 
+    }
 
-    //*This is to use it as a parser */
+    let mut parser = Parser::new(token_result.unwrap());
+    let parsed_result = parser.parse();
 
-    // 'parse: loop {
-    //     let mut input = String::new();
-    //     print!(">>> ");
-    //     io::stdout().flush()?; //apparently rust only outputs at every new line
+    if let Err(msg) = parsed_result{
+        eprintln!("{}", msg);
+        return (); 
+    }
 
-    //     io::stdin().read_line(&mut input)?;
-        
-    //     let mut scan = Scanner::new(&input); 
-    //     scan.convert(); 
-    //     scan.debug(); 
-    //     let mut token_list= scan.output(); 
+    let resolver_result = resolver.resolve((&parsed_result).clone().unwrap());
 
-    //     if input.trim() == "exit"{
-    //         break 'parse;
-    //     }
-    // }
+    if let Err(msg) = resolver_result{
+        eprintln!("{}", msg);
+        return (); 
+    }
 
-    //*This is to test it via the test.dingle file */
+    let interpreter_result = interpreter.prime_interpret(parsed_result.unwrap());
 
-    let contents = fs::read_to_string("src/test.dingle")
-        .expect("Should have been able to read the file");
+    if let Err(msg) = interpreter_result{
+        eprintln!("{}", msg);    
+        return (); 
+    }
+}
 
-    let mut token_list= scan(&contents, false);
-    let mut parse = Parser::new(token_list);
-      
-    let mut parsed = parse.parse();
+fn run_line(source: &str, debug: bool, interpreter: &mut Interpreter, resolver: &mut Resolver){
 
-    //dbg!(&parsed);
+    let mut resolver_save = resolver.clone();
+    let mut intepreter_save = interpreter.clone(resolver_save.give_local());
+
+    let token_result = scan(source, debug);
+
+    if let Err(msg) = token_result{
+        eprintln!("{}", msg);
+        return (); 
+    }
+
+    let mut parser = Parser::new(token_result.unwrap());
+    let parsed_result = parser.parse();
+
+    if let Err(msg) = parsed_result{
+        eprintln!("{}", msg);
+        return (); 
+    }
+
+    let resolver_result = resolver.resolve((&parsed_result).clone().unwrap());
+
+    if let Err(msg) = resolver_result{
+        eprintln!("{}", msg);
+        *resolver = resolver_save;
+        return (); 
+    }
+
+    let interpreter_result = interpreter.prime_interpret(parsed_result.unwrap());
+
+    if let Err(msg) = interpreter_result{
+        eprintln!("{}", msg);
+        *resolver = resolver_save;
+        *interpreter = intepreter_save;
+
+        return (); 
+    }
+}
+
+fn run_file(path: &str, debug: bool) {
+    let contents = fs::read_to_string(path)
+        .unwrap_or_else(|_| {
+            eprintln!("Could not read file '{}'", path);
+            std::process::exit(1);
+        });
+
+    run_source(&contents, debug);
+}
+
+fn repl() -> io::Result<()> {
+    println!("Dinglebob Interpreter");
+    println!("Type 'exit' to quit.\n");
 
     let mut resolver = Resolver::new();
-    resolver.resolve(parsed.clone()); 
-    
-   
-    let mut interpret = Interpreter::new(true, resolver.locals);
+    let mut interpreter = Interpreter::new(true, resolver.give_local());
 
-    interpret.interpret(parsed);
+    loop {
+        let mut input = String::new();
+        print!(">>> ");
+        io::stdout().flush()?;
+        io::stdin().read_line(&mut input)?;
 
+        let trimmed = input.trim();
+        if trimmed.is_empty() {
+            continue;
+        }
+        if trimmed == "exit" {
+            break;
+        }
+        run_line(&input, false, &mut interpreter, &mut resolver);
+    }
 
-    // let mut input = String::from("+ - 123.5 12 hello = \"poop\" 0..3 #1 2 3111 \n hello while != !  e");
-    // let mut scan = Scanner::new(&input); 
-    // scan.debug(); 
-    //println!("{:?}", Expression::Literal(TokenKind::NUMBER(100.0)));
-    Ok(())    
+    Ok(())
+}
+
+fn main() -> io::Result<()> {
+    let args: Vec<String> = env::args().collect();
+
+    // Usage:
+    //   dinglebob                -> REPL
+    //   dinglebob file.dingle     -> run file
+    //   dinglebob -d file.dingle  -> run file with debug (tokens printed)
+    match args.len() {
+        1 => repl(),
+        2 => {
+            run_file(&args[1], false);
+            Ok(())
+        }
+        3 => {
+            if args[1] == "-d" || args[1] == "--debug" {
+                run_file(&args[2], true);
+                Ok(())
+            } else {
+                eprintln!("Usage:\n  dinglebob\n  dinglebob <file>\n  dinglebob -d <file>");
+                std::process::exit(1);
+            }
+        }
+        _ => {
+            eprintln!("Usage:\n  dinglebob\n  dinglebob <file>\n  dinglebob -d <file>");
+            std::process::exit(1);
+        }
+    }
 }

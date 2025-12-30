@@ -1,12 +1,13 @@
 use crate::token::Token;
 use crate::token::TokenKind;
 use std::str::Chars;
-use std::process; 
+
+type ScanResult<T> = Result<T, String>;
 
 struct Scanner<'a> {
     curr_input: Chars<'a>,
     token_list: Vec<Token>,
-    line: i32, 
+    line: i32,
     token_id: i32,
 }
 
@@ -16,12 +17,12 @@ impl<'a> Scanner<'a> {
             curr_input: input.chars(),
             token_list: Vec::new(),
             line: 1,
-            token_id: 0
+            token_id: 0,
         }
     }
-    fn handle_error(&self, msg: &str) {
-        eprintln!("[Line {}] Scanner Error: {}", self.line, msg);
-        process::exit(1);
+
+    fn err(&self, msg: &str) -> String {
+        format!("[Line {}] Scanner Error: {}", self.line, msg)
     }
 
     fn add_token(&mut self, kind: TokenKind, lexeme: String) {
@@ -29,7 +30,7 @@ impl<'a> Scanner<'a> {
             kind,
             lexeme,
             line: self.line,
-            id: self.token_id
+            id: self.token_id,
         });
 
         self.token_id += 1;
@@ -52,35 +53,31 @@ impl<'a> Scanner<'a> {
         }
 
         self.add_token(TokenKind::NUMBER, lexeme);
-
-        // if lexeme.parse::<f32>().is_ok() {
-            
-        // } else {
-        //     self.handle_error(&format!("Invalid numeric literal: {}", lexeme));
-        // }
     }
 
-    fn handle_strings(&mut self) {
+    fn handle_strings(&mut self) -> ScanResult<()> {
         let mut string_content = String::new();
         let mut met_end = false;
 
         while let Some(c) = self.peak() {
             if c != '"' {
-                if c == '\n' { self.line += 1; }
+                if c == '\n' {
+                    self.line += 1;
+                }
                 string_content.push(c);
                 self.curr_input.next();
             } else {
                 met_end = true;
-                self.curr_input.next(); 
+                self.curr_input.next();
                 break;
             }
         }
 
         if met_end {
-            let lexeme = string_content;
-            self.add_token(TokenKind::STRING, lexeme);
+            self.add_token(TokenKind::STRING, string_content);
+            Ok(())
         } else {
-            self.handle_error("Unterminated string literal: expected a closing '\"'.");
+            Err(self.err("Unterminated string literal: expected a closing '\"'."))
         }
     }
 
@@ -115,7 +112,7 @@ impl<'a> Scanner<'a> {
             "lambda" => TokenKind::LAMBDA,
             _ => TokenKind::IDENTIFIER,
         };
-        
+
         self.add_token(kind, lexeme);
     }
 
@@ -142,13 +139,13 @@ impl<'a> Scanner<'a> {
         }
     }
 
-    pub fn convert(&mut self) {
+    pub fn convert(&mut self) -> ScanResult<()> {
         loop {
             let curr_char = match self.curr_input.next() {
                 Some(c) => c,
                 None => {
                     self.add_token(TokenKind::EOF, String::new());
-                    break;
+                    return Ok(());
                 }
             };
 
@@ -175,24 +172,24 @@ impl<'a> Scanner<'a> {
                 '!' => self.handle_equal(TokenKind::BANG, TokenKind::BANG_EQUAL, '!'),
                 '>' => self.handle_equal(TokenKind::GREATER, TokenKind::GREATER_EQUAL, '>'),
                 '<' => self.handle_equal(TokenKind::LESS, TokenKind::LESS_EQUAL, '<'),
-                '"' => self.handle_strings(),
+                '"' => self.handle_strings()?,
                 '0'..='9' => self.handle_digits(curr_char),
                 _ => {
                     if curr_char.is_alphabetic() || curr_char == '_' {
                         self.handle_identifier(curr_char);
                     } else {
-                        self.handle_error(&format!(
+                        return Err(self.err(&format!(
                             "Unexpected character '{}' (not valid in this language).",
                             curr_char
-                        ));
+                        )));
                     }
                 }
             }
         }
     }
 
-    pub fn debug(&mut self) {
-        for item in &self.token_list{
+    pub fn debug(&self) {
+        for item in &self.token_list {
             println!("{:?}", item)
         }
     }
@@ -202,13 +199,13 @@ impl<'a> Scanner<'a> {
     }
 }
 
-pub fn scan(contents: &str, debug: bool) -> Vec<Token>{
-    let mut scan = Scanner::new(&contents); 
-    scan.convert(); 
+pub fn scan(contents: &str, debug: bool) -> ScanResult<Vec<Token>> {
+    let mut scanner = Scanner::new(contents);
+    scanner.convert()?;
 
-    if debug{
-        scan.debug();
+    if debug {
+        scanner.debug();
     }
-     
-    scan.output()
+
+    Ok(scanner.output())
 }

@@ -22,12 +22,20 @@ use crate::func::*;
 pub struct Interpreter{
     pub global_environment: Rc<RefCell<Environment>>,
     pub is_prime: bool, 
-    pub locals: HashMap<Token, i32>
+    pub locals: Rc<RefCell<HashMap<Token, i32>>>
 }
 
 impl Interpreter {
 
-    pub fn new(is_prime: bool, locals: HashMap<Token, i32> ) -> Self {
+    pub fn clone(&mut self, locals: Rc<RefCell<HashMap<Token, i32>>> ) -> Self {
+        Interpreter {
+            global_environment: Rc::new(RefCell::new(self.global_environment.borrow().clone())),
+            is_prime: self.is_prime, 
+            locals: locals
+        }
+    }
+
+    pub fn new(is_prime: bool, locals: Rc<RefCell<HashMap<Token, i32>>> ) -> Self {
 
         let mut environment = Rc::new(RefCell::new(Environment::new(None))); 
         let mut edittable_env = environment.borrow_mut();
@@ -55,42 +63,38 @@ impl Interpreter {
         }
     }
 
+    pub fn prime_interpret(&mut self, statements: Vec<Statement>) -> Result<(), String>{
+
+        let interpret_result = self.interpret(statements);
+        match interpret_result {
+                    Err(BreakResult::Error(msg)) => {return Err(format!("{}", msg));},
+                    Err(BreakResult::Return(t, _val)) => 
+                        {
+                            return Err(format!(
+                                "[Line {}] Interpreter Error: 'return' can only be used inside a function body.",
+                                t.line
+                            ));
+                            //process::exit(1)
+                        },
+                    Err(BreakResult::Break(t)) => {
+                            return Err(format!(
+                                "[Line {}] Interpreter Error: 'break' can only be used inside a loop body.",
+                                t.line
+                            ));
+                            //process::exit(1)
+                        },
+                    _=> {}
+                }
+
+        Ok(())
+    }
+
     pub fn interpret(&mut self, statements: Vec<Statement>) -> Result<Value, BreakResult>{
 
         for stmt in statements{
-            let result = self.execute(stmt);
-
-            //dbg!(&result);
-            //dbg!(&self.is_prime);
-            if self.is_prime{
-                match result {
-                    Err(BreakResult::Error(msg)) => {eprintln!("{}", msg); process::exit(1)},
-                    Err(BreakResult::Return(t, _val)) => 
-                        {
-                            eprintln!(
-                                "[Line {}] Interpreter Error: 'return' can only be used inside a function body.",
-                                t.line
-                            );
-                            process::exit(1)
-                        },
-                    Err(BreakResult::Break(t)) => {
-                            eprintln!(
-                                "[Line {}] Interpreter Error: 'break' can only be used inside a loop body.",
-                                t.line
-                            );
-                            process::exit(1)
-                        },
-                    _=> {}
-                }
-            } else {
-                match result {
-                    Err(a) => {return Err(a)},
-                    _=> {}
-                }
-            }
-
+            let result = self.execute(stmt)?;
         }
-            
+
         return Ok(Value::None);
     }
 
@@ -450,7 +454,7 @@ impl Interpreter {
                     Interpreter { 
                         global_environment: Rc::clone(&env), 
                         is_prime: false, 
-                        locals: self.locals.clone()
+                        locals: Rc::clone(&self.locals)
                     }, 
                     processed_args
                 );
@@ -503,7 +507,8 @@ impl Interpreter {
 
     fn evaluate_variable(&mut self, token: Token) -> Result<Value, BreakResult>{
 
-        let Some(steps) = self.locals.get(&token) else {
+        let binding = self.locals.borrow();
+        let Some(steps) = binding.get(&token) else {
             return self.global_environment.borrow_mut().get(token);
         };
 
