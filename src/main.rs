@@ -32,7 +32,7 @@ use resolver::Resolver;
 
 fn main() -> io::Result<()> {
 
-    println!("Dinglebob Interpreter"); 
+    println!("Dinglebob Interpreter \n"); 
 
     //*This is to use it as a parser */
 

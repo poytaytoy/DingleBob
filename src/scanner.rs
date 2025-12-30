@@ -3,10 +3,6 @@ use crate::token::TokenKind;
 use std::str::Chars;
 use std::process; 
 
-
-//TODO figure out what the fuck is the lifetimes doing 
-//TODO also figure out what the hell gets borrowed and copy -> like what the fuck is the copy thing doing 
-
 struct Scanner<'a> {
     curr_input: Chars<'a>,
     token_list: Vec<Token>,
@@ -84,7 +80,7 @@ impl<'a> Scanner<'a> {
             let lexeme = string_content;
             self.add_token(TokenKind::STRING, lexeme);
         } else {
-            self.handle_error("Unterminated string.");
+            self.handle_error("Unterminated string literal: expected a closing '\"'.");
         }
     }
 
@@ -185,7 +181,10 @@ impl<'a> Scanner<'a> {
                     if curr_char.is_alphabetic() || curr_char == '_' {
                         self.handle_identifier(curr_char);
                     } else {
-                        self.handle_error(&format!("Unexpected character '{}'", curr_char));
+                        self.handle_error(&format!(
+                            "Unexpected character '{}' (not valid in this language).",
+                            curr_char
+                        ));
                     }
                 }
             }

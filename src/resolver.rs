@@ -69,7 +69,10 @@ impl Resolver{
 
         if !self.stack.is_empty(){
             if self.stack[0].contains_key(&var.lexeme){
-                self.handle_error(&format!("The variable {} has already been defined in this scope", &var.lexeme), var.line);
+                self.handle_error(
+                    &format!("Duplicate definition: '{}' is already defined in this scope.", &var.lexeme),
+                    var.line
+                );
             };
             self.stack[0].insert(var.lexeme.clone(), true);
         }

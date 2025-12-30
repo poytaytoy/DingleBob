@@ -1,20 +1,14 @@
-let initial = timeit(); 
-
-define numDigits(n) {
-    let count = 0;
-    let increment = 1; 
-
-    while n >= increment {
-        count = count + 1; 
-        increment = increment * 10; 
-    } 
-
-    return count; 
-
+define pipeline(xs) {
+  return xs[ len(xs) - 1 ];
 }
 
-print numDigits(10); #2
-print numDigits(1); #1 
-print numDigits(3290320); #7 
+define wrap(x) {
+  return pipeline(x);
+}
 
-print "Time: " + (timeit() - initial);
+define entry() {
+  let v = 123;      # <- not a list
+  return wrap(v);
+}
+
+print entry();

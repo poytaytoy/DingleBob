@@ -16,7 +16,12 @@ use std::time::{SystemTime, UNIX_EPOCH};
 pub trait Func { 
     fn toString(&self) -> String; 
     fn expect(&self, args: Value, value_type: &str) -> Result<Value, BreakResult> {
-        let err = |got: Value| Err(BreakResult::Error(format!("Expected type {} but got {:?}", value_type, got)));
+        let err = |got: Value| {
+            Err(BreakResult::Error(format!(
+                "Type error: expected {}, got {:?}.",
+                value_type, got
+            )))
+        };
 
         match value_type {
             "String" => if matches!(args, Value::String(_)) { Ok(args) } else { err(args) },
@@ -48,7 +53,10 @@ impl Func for Timeit {
     fn call(&self, _interpreter: Interpreter, input_args: Vec<Value>) -> Result<Value, BreakResult> {
 
         if input_args.len() != 0 { 
-            return Err(BreakResult::Error(String::from("Argument size mismatch; Expected 0 argument(s)")));
+            return Err(BreakResult::Error(format!(
+                "Arity error: 'timeit' takes 0 arguments, but got {}.",
+                input_args.len()
+            )));
         }
 
         let start = SystemTime::now();
@@ -70,7 +78,10 @@ impl Func for Abs {
 
     fn call(&self, interpreter: Interpreter, input_args: Vec<Value>) -> Result<Value, BreakResult>{
         if input_args.len() != 1 { 
-            return Err(BreakResult::Error(String::from("Argument size mismatch; Expected 1 argument(s)")));
+            return Err(BreakResult::Error(format!(
+                "Arity error: 'abs' takes 1 argument, but got {}.",
+                input_args.len()
+            )));
         }
 
         let Value::Float(input_num) = self.expect(input_args[0].clone(), "Float")? else {unreachable!()}; 
@@ -89,7 +100,10 @@ impl Func for Len {
 
     fn call(&self, interpreter: Interpreter, input_args: Vec<Value>) -> Result<Value, BreakResult>{
         if input_args.len() != 1 { 
-            return Err(BreakResult::Error(String::from("Argument size mismatch; Expected 1 argument(s)")));
+            return Err(BreakResult::Error(format!(
+                "Arity error: 'len' takes 1 argument, but got {}.",
+                input_args.len()
+            )));
         }
 
         let Value::List(lst) = self.expect(input_args[0].clone(), "List")? else {unreachable!()};
@@ -108,7 +122,10 @@ impl Func for Copy {
 
     fn call(&self, interpreter: Interpreter, input_args: Vec<Value>) -> Result<Value, BreakResult>{
         if input_args.len() != 1 { 
-            return Err(BreakResult::Error(String::from("Argument size mismatch; Expected 1 argument(s)")));
+            return Err(BreakResult::Error(format!(
+                "Arity error: 'copy' takes 1 argument, but got {}.",
+                input_args.len()
+            )));
         }
 
         let Value::List(lst) = self.expect(input_args[0].clone(), "List")? else {unreachable!()};
@@ -127,7 +144,10 @@ impl Func for Append {
 
     fn call(&self, interpreter: Interpreter, input_args: Vec<Value>) -> Result<Value, BreakResult>{
         if input_args.len() != 2 { 
-            return Err(BreakResult::Error(String::from("Argument size mismatch; Expected 1 argument(s)")));
+            return Err(BreakResult::Error(format!(
+                "Arity error: 'append' takes 2 arguments (list, value), but got {}.",
+                input_args.len()
+            )));
         }
 
         let Value::List(lst) = self.expect(input_args[0].clone(), "List")? else {unreachable!()};
@@ -149,7 +169,10 @@ impl Func for Concat {
 
     fn call(&self, interpreter: Interpreter, input_args: Vec<Value>) -> Result<Value, BreakResult>{
         if input_args.len() != 2 { 
-            return Err(BreakResult::Error(String::from("Argument size mismatch; Expected 1 argument(s)")));
+            return Err(BreakResult::Error(format!(
+                "Arity error: 'concat' takes 2 arguments (list, list), but got {}.",
+                input_args.len()
+            )));
         }
 
         let Value::List(lst1) = self.expect(input_args[0].clone(), "List")? else {unreachable!()};
@@ -176,7 +199,12 @@ impl Func for Function {
 
     fn call(&self, mut interpreter: Interpreter, input_args: Vec<Value>) -> Result<Value, BreakResult>  {
         if input_args.len() != self.args_list.len() { 
-            return Err(BreakResult::Error(format!("Argument size mismatch; Expected {} argument(s)", self.args_list.len())));
+            return Err(BreakResult::Error(format!(
+                "Arity error: function '{}' expects {} argument(s), but got {}.",
+                self.name.lexeme,
+                self.args_list.len(),
+                input_args.len()
+            )));
         }
 
         let mut var_list: Vec<Statement> = Vec::new(); 
@@ -188,7 +216,7 @@ impl Func for Function {
 
         match interpreter.interpret(vec![Statement::Block(Box::new(var_list))]) {
             Ok(_) => {return Ok(Value::None);},
-            Err(BreakResult::Return(t,v )) => {return Ok(v)},
+            Err(BreakResult::Return(_t,v )) => {return Ok(v)},
             Err(br) => {return Err(br)}
         }
     }
@@ -221,7 +249,11 @@ impl Func for Lambda {
 
     fn call(&self, mut interpreter: Interpreter, input_args: Vec<Value>) -> Result<Value, BreakResult>  {
         if input_args.len() != self.args_list.len() { 
-            return Err(BreakResult::Error(format!("Argument size mismatch; Expected {} argument(s)", self.args_list.len())));
+            return Err(BreakResult::Error(format!(
+                "Arity error: lambda expects {} argument(s), but got {}.",
+                self.args_list.len(),
+                input_args.len()
+            )));
         }
 
         let mut var_list: Vec<Statement> = Vec::new(); 
@@ -233,16 +265,9 @@ impl Func for Lambda {
 
         match interpreter.interpret(vec![Statement::Block(Box::new(var_list))]) {
             Ok(_) => {return Ok(Value::None);},
-            Err(BreakResult::Return(t,v )) => {return Ok(v)},
+            Err(BreakResult::Return(_t,v )) => {return Ok(v)},
             Err(br) => {return Err(br)}
         }
     }
     
 }
-
-
-
-
-
-
-

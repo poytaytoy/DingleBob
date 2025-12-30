@@ -34,7 +34,10 @@ impl Environment {
 
     pub fn define(&mut self, var: Token, value: Value) -> Result<Value, BreakResult> {
         if self.hashMap.contains_key(&var.lexeme) {
-            return Err(BreakResult::Error(self.handle_error(&format!("Variable '{}' has already been declared", &var.lexeme), var.line)));
+            return Err(BreakResult::Error(self.handle_error(
+                &format!("Name '{}' is already defined in this scope.", &var.lexeme),
+                var.line
+            )));
         }
         self.hashMap.insert(var.lexeme.clone(), value); 
 
@@ -51,7 +54,6 @@ impl Environment {
         }
 
         match &self.env_superior { 
-            // Note: use .borrow() for reading to avoid runtime panics
             Some(env) => env.borrow().retrieve(token),
             None => None
         }
@@ -61,7 +63,10 @@ impl Environment {
         let cloned_token = token.clone();
         match self.retrieve(&token) {
             Some(v) => Ok(v), 
-            None => Err(BreakResult::Error(self.handle_error(&format!("Undefined variable '{}' not found within current scope", cloned_token.lexeme), cloned_token.line)))
+            None => Err(BreakResult::Error(self.handle_error(
+                &format!("Undefined variable '{}': no binding found in this scope (or any enclosing scope).", cloned_token.lexeme),
+                cloned_token.line
+            )))
         }
     }
 
@@ -69,13 +74,19 @@ impl Environment {
         if steps == 0 {
             return match self.hashMap.get(&token.lexeme) {
                 Some(v) => Ok(v.clone()),
-                None => Err(BreakResult::Error(self.handle_error(&format!("Undefined variable '{}' at resolved depth", &token.lexeme), token.line)))
+                None => Err(BreakResult::Error(self.handle_error(
+                    &format!("Resolved variable '{}' not found at the expected scope depth (resolver bug or stale locals map).", &token.lexeme),
+                    token.line
+                )))
             };
         }
 
         match &self.env_superior {
             Some(env) => env.borrow().get_at(token, steps - 1),
-            None => Err(BreakResult::Error(self.handle_error("Resolver depth exceeded environment chain", token.line)))
+            None => Err(BreakResult::Error(self.handle_error(
+                &format!("Resolver depth {} exceeds the available environment chain.", steps),
+                token.line
+            )))
         }
     }
     
@@ -86,7 +97,10 @@ impl Environment {
         } else {
             match &mut self.env_superior {
                 Some(env) => env.borrow_mut().assign(token, value),
-                None => Err(BreakResult::Error(self.handle_error(&format!("Undefined symbol assignment not found within current scope {}", &token.lexeme), token.line)))
+                None => Err(BreakResult::Error(self.handle_error(
+                    &format!("Assignment to undefined variable '{}'. Declare it before assigning.", &token.lexeme),
+                    token.line
+                )))
             }
         }
     }
