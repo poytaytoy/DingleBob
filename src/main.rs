@@ -26,12 +26,12 @@ mod func;
 mod resolver;
 use resolver::Resolver;
 
-fn run_source(source: &str, debug: bool) {
+fn run_source(source: &str) {
     let mut resolver = Resolver::new();
     let mut interpreter = Interpreter::new(true, resolver.give_local());
-    let token_list = scan(source, debug);
+    let token_list = scan(source, false);
 
-    let token_result = scan(source, debug);
+    let token_result = scan(source, false);
 
     if let Err(msg) = token_result{
         eprintln!("{}", msg);
@@ -100,14 +100,14 @@ fn run_line(source: &str, debug: bool, interpreter: &mut Interpreter, resolver: 
     }
 }
 
-fn run_file(path: &str, debug: bool) {
+fn run_file(path: &str) {
     let contents = fs::read_to_string(path)
         .unwrap_or_else(|_| {
             eprintln!("Could not read file '{}'", path);
             std::process::exit(1);
         });
 
-    run_source(&contents, debug);
+    run_source(&contents);
 }
 
 fn repl() -> io::Result<()> {
@@ -138,28 +138,15 @@ fn repl() -> io::Result<()> {
 
 fn main() -> io::Result<()> {
     let args: Vec<String> = env::args().collect();
-
-    // Usage:
-    //   dinglebob                -> REPL
-    //   dinglebob file.dingle     -> run file
-    //   dinglebob -d file.dingle  -> run file with debug (tokens printed)
+    
     match args.len() {
         1 => repl(),
         2 => {
-            run_file(&args[1], false);
+            run_file(&args[1]);
             Ok(())
         }
-        3 => {
-            if args[1] == "-d" || args[1] == "--debug" {
-                run_file(&args[2], true);
-                Ok(())
-            } else {
-                eprintln!("Usage:\n  dinglebob\n  dinglebob <file>\n  dinglebob -d <file>");
-                std::process::exit(1);
-            }
-        }
         _ => {
-            eprintln!("Usage:\n  dinglebob\n  dinglebob <file>\n  dinglebob -d <file>");
+            eprintln!("Usage:\n  dinglebob\n  dinglebob <file>");
             std::process::exit(1);
         }
     }
