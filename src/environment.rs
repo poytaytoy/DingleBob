@@ -7,7 +7,7 @@ use std::cell::RefCell;
 
 pub struct Environment { 
     env_superior: Option<Rc<RefCell<Environment>>>, 
-    hashMap: HashMap<String, Value>
+    pub hashMap: HashMap<String, Value>
 }
 
 impl Environment { 
@@ -40,6 +40,17 @@ impl Environment {
             )));
         }
         self.hashMap.insert(var.lexeme.clone(), value); 
+
+        Ok(Value::None)
+    }
+
+    pub fn define_from_execute(&mut self, var: String,  value: Value) -> Result<Value, BreakResult> {
+        if self.hashMap.contains_key(&var) {
+            return Err(BreakResult::Error(
+                format!("Name '{}' is already defined", &var),
+            ));
+        }
+        self.hashMap.insert(var, value); 
 
         Ok(Value::None)
     }

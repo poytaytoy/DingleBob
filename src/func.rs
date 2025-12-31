@@ -1,5 +1,8 @@
 use crate::interpreter;
 use crate::interpreter::Interpreter;
+use crate::scanner::*;
+use crate::resolver::Resolver; 
+use crate::parser::Parser;
 use crate::ast::Value; 
 use crate::ast::Statement;
 use crate::ast::Expression;
@@ -7,6 +10,7 @@ use crate::ast::BreakResult;
 use crate::token::Token;
 use std::cell::Ref;
 use std::cell::RefCell;
+use std::fs;
 use std::io::LineWriter;
 use std::rc::Rc;
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -184,23 +188,86 @@ impl Func for Concat {
     }
 }
 
-pub struct Execute; 
+pub struct Import; 
 
-impl Func for Execute { 
+impl Func for Import { 
 
     fn toString(&self) -> String {
-        return String::from("execute")
+        return String::from("import")
     }
 
     fn call(&self, interpreter: Interpreter, input_args: Vec<Value>) -> Result<Value, BreakResult>{
-        if input_args.len() != 2 { 
+
+        let mut resolver_exe = Resolver::new();
+        let mut interpreter_exe = Interpreter::new(true, resolver_exe.give_local());
+
+        if input_args.len() != 1 { 
             return Err(BreakResult::Error(format!(
-                "Arity error: 'execute' takes 1 arguments String, but got {}.",
+                "Arity error: 'import' takes 1 arguments String, but got {}.",
                 input_args.len()
             )));
         }
 
-        let Value::String(file) = self.expect(input_args[0].clone(), "String")? else {unreachable!()};
+        let Value::String(path) = self.expect(input_args[0].clone(), "String")? else {unreachable!()};
+
+        let contents = fs::read_to_string(&path)
+        .unwrap_or_else(|_| {
+            eprintln!("Could not read file '{}'", path);
+            std::process::exit(1);
+        });
+
+        let token_result = scan(&contents, false, path);
+
+        if let Err(msg) = token_result{
+             return Err(BreakResult::Error(format!(
+                "{}", msg
+            )));
+        }
+
+        let mut parser = Parser::new(token_result.unwrap());
+        let parsed_result = parser.parse();
+
+        if let Err(msg) = parsed_result{
+            return Err(BreakResult::Error(format!(
+                "{}", msg
+            )));
+        }
+
+        let resolver_result = resolver_exe.resolve((&parsed_result).clone().unwrap());
+
+        if let Err(msg) = resolver_result{
+            return Err(BreakResult::Error(format!(
+                "{}", msg
+            )));
+        }
+
+        let interpreter_result = interpreter_exe.prime_interpret(parsed_result.unwrap());
+
+        if let Err(msg) = interpreter_result{
+            return Err(BreakResult::Error(format!(
+                "{}", msg
+            )));
+        }
+
+        for (k, v) in interpreter_exe
+            .global_environment
+            .borrow()
+            .hashMap
+            .clone()
+            .into_iter()
+        {
+            if !k.starts_with('_') {
+                interpreter
+                    .global_environment
+                    .borrow_mut()
+                    .define_from_execute(k, v);
+            }
+        }
+        
+        for (k, v) in interpreter_exe.locals.borrow().clone().into_iter() {
+            interpreter.locals.borrow_mut().insert(k, v);
+        }
+
 
         return Ok(Value::None);
     }

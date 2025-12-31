@@ -16,6 +16,7 @@ use std::rc::Rc;
 use std::cell::RefCell; 
 use crate::func::*; 
 
+
 pub struct Interpreter{
     pub global_environment: Rc<RefCell<Environment>>,
     pub is_prime: bool, 
@@ -52,7 +53,7 @@ impl Interpreter {
         define("copy", Box::new(Copy {}));
         define("append", Box::new(Append {}));
         define("concat", Box::new(Concat {}));
-
+        define("import", Box::new(Import {}));
         Interpreter{
             global_environment: Rc::clone(&environment),
             is_prime: true,
@@ -68,15 +69,15 @@ impl Interpreter {
                     Err(BreakResult::Return(t, _val)) => 
                         {
                             return Err(format!(
-                                "[Line {}] Interpreter Error: 'return' can only be used inside a function body.",
-                                t.line
+                                "[{}: Line {}] Interpreter Error: 'return' can only be used inside a function body.",
+                                t.file, t.line
                             ));
                             //process::exit(1)
                         },
                     Err(BreakResult::Break(t)) => {
                             return Err(format!(
-                                "[Line {}] Interpreter Error: 'break' can only be used inside a loop body.",
-                                t.line
+                                "[{}: Line {}] Interpreter Error: 'break' can only be used inside a loop body.",
+                                t.file, t.line
                             ));
                             //process::exit(1)
                         },
@@ -260,21 +261,21 @@ impl Interpreter {
             let Value::List(ls) = l_ev else {
                 return Err(self.handle_error(
                     "Invalid assignment target: only lists can be indexed (left side of '[...]' must be a list).",
-                    t.line
+                    t
                 ));
             };
 
             let Value::Int(index) = i_ev else {
                 return Err(self.handle_error(
                     "Invalid list index type: indices must be integers.",
-                    t.line
+                    t
                 ));
             };
 
             if !(0 <= index && index < (ls.borrow().len() as i128)){
                 return Err(self.handle_error(
                     &format!("Index out of bounds: index {} is not in [0, {}).", index, ls.borrow().len()),
-                    t.line
+                    t
                 ));
             }
 
@@ -284,7 +285,7 @@ impl Interpreter {
 
         return Err(self.handle_error(
             &format!("Invalid assignment target near '=': expected a variable name or list index expression (e.g. x = ... or xs[i] = ...)."),
-            eq.line
+            eq
         ));
         
     }
@@ -302,7 +303,7 @@ impl Interpreter {
                 (Value::String(m), Value::Int(n)) => Ok(Value::String(m.clone() + &n.to_string())),
                 (Value::String(m), Value::Float(n)) => Ok(Value::String(m.clone() + &n.to_string())),
                 (Value::String(m), Value::String(n)) => Ok(Value::String(m.clone() + &n)),
-                _ => Err(self.handle_error("Type error: '+' expects (number, number) or (string, string/number).", o.line)),
+                _ => Err(self.handle_error("Type error: '+' expects (number, number) or (string, string/number).", o)),
             },
 
             TokenKind::MINUS => match (l_ev, r_ev) {
@@ -310,7 +311,7 @@ impl Interpreter {
                 (Value::Float(m), Value::Float(n)) => Ok(Value::Float(m - n)),
                 (Value::Int(m), Value::Float(n)) => Ok(Value::Float((m as f64) - n)),
                 (Value::Float(m), Value::Int(n)) => Ok(Value::Float(m - (n as f64))),
-                _ => Err(self.handle_error("Type error: '-' expects numeric operands.", o.line)),
+                _ => Err(self.handle_error("Type error: '-' expects numeric operands.", o)),
             },
 
             TokenKind::STAR => match (l_ev, r_ev) {
@@ -318,27 +319,27 @@ impl Interpreter {
                 (Value::Float(m), Value::Float(n)) => Ok(Value::Float(m * n)),
                 (Value::Int(m), Value::Float(n)) => Ok(Value::Float((m as f64) * n)),
                 (Value::Float(m), Value::Int(n)) => Ok(Value::Float(m * (n as f64))),
-                _ => Err(self.handle_error("Type error: '*' expects numeric operands.", o.line)),
+                _ => Err(self.handle_error("Type error: '*' expects numeric operands.", o)),
             },
 
             TokenKind::SLASH => match (l_ev, r_ev) {
                 (Value::Int(m), Value::Int(n)) => {
-                    if n == 0 { Err(self.handle_error("Division by zero.", o.line)) } 
+                    if n == 0 { Err(self.handle_error("Division by zero.", o)) } 
                     else { Ok(Value::Int(m / n)) }
                 }
                 (Value::Float(m), Value::Float(n)) => {
-                    if n == 0.0 { Err(self.handle_error("Division by zero.", o.line)) } 
+                    if n == 0.0 { Err(self.handle_error("Division by zero.", o)) } 
                     else { Ok(Value::Float(m / n)) }
                 }
                 (Value::Int(m), Value::Float(n)) => {
-                    if n == 0.0 { Err(self.handle_error("Division by zero.", o.line)) } 
+                    if n == 0.0 { Err(self.handle_error("Division by zero.", o)) } 
                     else { Ok(Value::Float((m as f64) / n)) }
                 }
                 (Value::Float(m), Value::Int(n)) => {
-                    if n == 0 { Err(self.handle_error("Division by zero.", o.line)) } 
+                    if n == 0 { Err(self.handle_error("Division by zero.", o)) } 
                     else { Ok(Value::Float(m / (n as f64))) }
                 }
-                _ => Err(self.handle_error("Type error: '/' expects numeric operands.", o.line)),
+                _ => Err(self.handle_error("Type error: '/' expects numeric operands.", o)),
             },
 
             TokenKind::PERCENT => match (l_ev, r_ev) {
@@ -346,7 +347,7 @@ impl Interpreter {
                 (Value::Float(m), Value::Float(n)) => Ok(Value::Float(m % n)),
                 (Value::Int(m), Value::Float(n)) => Ok(Value::Float((m as f64) % n)),
                 (Value::Float(m), Value::Int(n)) => Ok(Value::Float(m % (n as f64))),
-                _ => Err(self.handle_error("Type error: '%' expects numeric operands.", o.line)),
+                _ => Err(self.handle_error("Type error: '%' expects numeric operands.", o)),
             },
 
             TokenKind::GREATER => match (l_ev, r_ev) {
@@ -354,7 +355,7 @@ impl Interpreter {
                 (Value::Float(m), Value::Float(n)) => Ok(Value::Bool(m > n)),
                 (Value::Int(m), Value::Float(n)) => Ok(Value::Bool((m as f64) > n)),
                 (Value::Float(m), Value::Int(n)) => Ok(Value::Bool(m > (n as f64))),
-                _ => Err(self.handle_error("Type error: '>' expects numeric operands.", o.line)),
+                _ => Err(self.handle_error("Type error: '>' expects numeric operands.", o)),
             },
 
             TokenKind::LESS => match (l_ev, r_ev) {
@@ -362,7 +363,7 @@ impl Interpreter {
                 (Value::Float(m), Value::Float(n)) => Ok(Value::Bool(m < n)),
                 (Value::Int(m), Value::Float(n)) => Ok(Value::Bool((m as f64) < n)),
                 (Value::Float(m), Value::Int(n)) => Ok(Value::Bool(m < (n as f64))),
-                _ => Err(self.handle_error("Type error: '<' expects numeric operands.", o.line)),
+                _ => Err(self.handle_error("Type error: '<' expects numeric operands.", o)),
             },
 
             TokenKind::GREATER_EQUAL => match (l_ev, r_ev) {
@@ -370,7 +371,7 @@ impl Interpreter {
                 (Value::Float(m), Value::Float(n)) => Ok(Value::Bool(m >= n)),
                 (Value::Int(m), Value::Float(n)) => Ok(Value::Bool((m as f64) >= n)),
                 (Value::Float(m), Value::Int(n)) => Ok(Value::Bool(m >= (n as f64))),
-                _ => Err(self.handle_error("Type error: '>=' expects numeric operands.", o.line)),
+                _ => Err(self.handle_error("Type error: '>=' expects numeric operands.", o)),
             },
 
             TokenKind::LESS_EQUAL => match (l_ev, r_ev) {
@@ -378,7 +379,7 @@ impl Interpreter {
                 (Value::Float(m), Value::Float(n)) => Ok(Value::Bool(m <= n)),
                 (Value::Int(m), Value::Float(n)) => Ok(Value::Bool((m as f64) <= n)),
                 (Value::Float(m), Value::Int(n)) => Ok(Value::Bool(m <= (n as f64))),
-                _ => Err(self.handle_error("Type error: '<=' expects numeric operands.", o.line)),
+                _ => Err(self.handle_error("Type error: '<=' expects numeric operands.", o)),
             },
 
             TokenKind::EQUAL_EQUAL => match (l_ev, r_ev) {
@@ -389,7 +390,7 @@ impl Interpreter {
                 (Value::Bool(m), Value::Bool(n)) => Ok(Value::Bool(m == n)),
                 (Value::String(m), Value::String(n)) => Ok(Value::Bool(m == n)),
                 (Value::None, Value::None) => Ok(Value::Bool(true)),
-                _ => Err(self.handle_error("Type error: '==' cannot compare these operand types.", o.line)),
+                _ => Err(self.handle_error("Type error: '==' cannot compare these operand types.", o)),
             },
 
             TokenKind::BANG_EQUAL => match (l_ev, r_ev) {
@@ -398,9 +399,9 @@ impl Interpreter {
                 (Value::Int(m), Value::Float(n)) => Ok(Value::Bool((m as f64) != n)),
                 (Value::Float(m), Value::Int(n)) => Ok(Value::Bool(m != (n as f64))),
                 (Value::Bool(m), Value::Bool(n)) => Ok(Value::Bool(m != n)),
-                _ => Err(self.handle_error("Type error: '!=' cannot compare these operand types.", o.line)),
+                _ => Err(self.handle_error("Type error: '!=' cannot compare these operand types.", o)),
             },
-            _ => Err(self.handle_error("Internal error: unknown binary operator.", o.line)),
+            _ => Err(self.handle_error("Internal error: unknown binary operator.", o)),
         }
     }
 
@@ -416,7 +417,7 @@ impl Interpreter {
                     return Ok(Value::Float(- m));
                 }
                 else {
-                    return Err(self.handle_error("Type error: unary '-' expects a number.", o.line)); 
+                    return Err(self.handle_error("Type error: unary '-' expects a number.", o)); 
                 }
             }
 
@@ -425,7 +426,7 @@ impl Interpreter {
                     return Ok(Value::Bool(!m));
                 } 
                 else {
-                    return Err(self.handle_error("Type error: '!' expects a boolean.", o.line)); 
+                    return Err(self.handle_error("Type error: '!' expects a boolean.", o)); 
                 }
             }
             _ => {}
@@ -461,7 +462,7 @@ impl Interpreter {
                     Err(BreakResult::Error(e)) => {
                         return Err(self.handle_error(
                             &format!("Error inside function call '{}':\n{}", call.toString(), &e),
-                            paren.line
+                            paren
                         ));
                     }
                     Err(a) => {return Err(a);}
@@ -470,7 +471,7 @@ impl Interpreter {
             _ => {
                 return Err(self.handle_error(
                     "Type error: attempted to call a non-function value.",
-                    paren.line
+                    paren
                 ));
             }
         }
@@ -529,21 +530,21 @@ impl Interpreter {
         let Value::List(ls) = l_ev else {
             return Err(self.handle_error(
                 "Type error: indexing ('[...]') is only supported on lists.",
-                t.line
+                t
             ));
         };
 
         let Value::Int(index) = i_ev else {
             return Err(self.handle_error(
                 "Type error: list indices must be integers.",
-                t.line
+                t
             ));
         };
 
         if !(0 <= index && index < (ls.borrow().len() as i128)){
             return Err(self.handle_error(
                 &format!("Index out of bounds: index {} is not in [0, {}).", index, ls.borrow().len()),
-                t.line
+                t
             ));
         }
 
@@ -561,13 +562,11 @@ impl Interpreter {
         return Ok(Value::List(Rc::new(RefCell::new(list))));
     }
 
-    // fn handle_error(&self, msg: &str, line: i32) {
+    fn handle_error(&self, msg: &str, token: Token) -> BreakResult{
+        let line = token.line;
+        let mut file = token.file;
 
-    //     eprintln!("[Line {}] Interpreter Error: {}", line, msg);
-    //     process::exit(1);
-    // }
-
-    fn handle_error(&self, msg: &str, line: i32) -> BreakResult{
-        return BreakResult::Error(format!("[Line {}] Interpreter Error: {}", line, msg));
+        BreakResult::Error(format!("[{}: Line {}] Interpreter Error: {}",  file, line,msg))
     }
 }
+

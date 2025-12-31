@@ -82,9 +82,10 @@ impl Resolver{
 
         if !self.stack.is_empty() {
             if self.stack[0].contains_key(&var.lexeme) {
+                // Pass the whole 'var' token instead of just var.line
                 return self.handle_error(
                     &format!("Duplicate definition: '{}' is already defined in this scope.", &var.lexeme),
-                    var.line,
+                    &var, 
                 );
             }
             self.stack[0].insert(var.lexeme.clone(), true);
@@ -224,7 +225,8 @@ impl Resolver{
         Rc::clone(&self.locals)
     }
 
-    fn handle_error<T>(&self, msg: &str, line: i32) -> ResolveResult<T> {
-        Err(format!("[Line {}] Semantic Error: {}", line, msg))
+    fn handle_error<T>(&self, msg: &str, token: &Token) -> ResolveResult<T> {
+        // Now using the token's metadata directly
+        Err(format!("[{}: Line {}] Semantic Error at '{}': {}", token.file, token.line, token.lexeme, msg))
     }
 }

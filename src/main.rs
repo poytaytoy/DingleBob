@@ -26,12 +26,11 @@ mod func;
 mod resolver;
 use resolver::Resolver;
 
-fn run_source(source: &str) {
+fn run_source(source: &str, file: String ) {
     let mut resolver = Resolver::new();
     let mut interpreter = Interpreter::new(true, resolver.give_local());
-    let token_list = scan(source, false);
 
-    let token_result = scan(source, false);
+    let token_result = scan(source, false, file);
 
     if let Err(msg) = token_result{
         eprintln!("{}", msg);
@@ -66,7 +65,7 @@ fn run_line(source: &str, debug: bool, interpreter: &mut Interpreter, resolver: 
     let mut resolver_save = resolver.clone();
     let mut intepreter_save = interpreter.clone(resolver_save.give_local());
 
-    let token_result = scan(source, debug);
+    let token_result = scan(source, debug, String::from(""));
 
     if let Err(msg) = token_result{
         eprintln!("{}", msg);
@@ -107,7 +106,7 @@ fn run_file(path: &str) {
             std::process::exit(1);
         });
 
-    run_source(&contents);
+    run_source(&contents, String::from(path));
 }
 
 fn repl() -> io::Result<()> {

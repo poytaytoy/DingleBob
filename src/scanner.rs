@@ -9,15 +9,17 @@ struct Scanner<'a> {
     token_list: Vec<Token>,
     line: i32,
     token_id: i32,
+    file: String
 }
 
 impl<'a> Scanner<'a> {
-    pub fn new(input: &'a str) -> Self {
+    pub fn new(input: &'a str, file: String) -> Self {
         Scanner {
             curr_input: input.chars(),
             token_list: Vec::new(),
             line: 1,
             token_id: 0,
+            file: file
         }
     }
 
@@ -31,6 +33,7 @@ impl<'a> Scanner<'a> {
             lexeme,
             line: self.line,
             id: self.token_id,
+            file: self.file.clone()
         });
 
         self.token_id += 1;
@@ -199,8 +202,8 @@ impl<'a> Scanner<'a> {
     }
 }
 
-pub fn scan(contents: &str, debug: bool) -> ScanResult<Vec<Token>> {
-    let mut scanner = Scanner::new(contents);
+pub fn scan(contents: &str, debug: bool, file: String) -> ScanResult<Vec<Token>> {
+    let mut scanner = Scanner::new(contents, file);
     scanner.convert()?;
 
     if debug {

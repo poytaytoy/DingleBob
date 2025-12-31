@@ -26,5 +26,6 @@ pub struct Token {
     pub lexeme: String, 
     pub line: i32,
     pub id: i32,  
+    pub file: String
 }
 

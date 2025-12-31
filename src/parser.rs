@@ -13,7 +13,7 @@ type ParseResult<T> = Result<T, String>;
 pub struct Parser {
     tokens_list: Vec<Token>,
     curr_index: usize, 
-    var_id: i32
+    var_id: i32,
 }
 
 impl Parser{
@@ -22,7 +22,7 @@ impl Parser{
         Parser{
             tokens_list: tokens_list, 
             curr_index: 0,
-            var_id: 0
+            var_id: 0,
         }
     }
 
@@ -627,12 +627,9 @@ impl Parser{
     }
 
     fn handle_error<T>(&self, msg: &str) -> ParseResult<T> {
-        // best-effort line reporting even if curr_index is at edge
-        let line = self.tokens_list
-            .get(self.curr_index)
-            .map(|t| t.line)
-            .unwrap_or_else(|| self.tokens_list.last().map(|t| t.line).unwrap_or(0));
+        let line = self.tokens_list[self.curr_index].line;
+        let mut file = self.tokens_list[self.curr_index].file.clone();
 
-        Err(format!("[Line {}] Parser Error: {}", line, msg))
+        Err(format!("[{}: Line {}] Parser Error: {}", file, line, msg))
     }
 }
