@@ -162,7 +162,7 @@ define BankAccount(owner, initial_balance) {
     };
 }
 
-let my_acc = BankAccount("d2i-23", 1000);
+let my_acc = BankAccount("poytaytoy", 1000);
 
 my_acc("deposit")(500);
 my_acc("withdraw")(200);
