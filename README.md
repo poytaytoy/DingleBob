@@ -1,7 +1,8 @@
 # Dinglebob 
 
-Dinglebob is a small interpreted language I made in Rust for fun -> It doesn't solve any real word problems unfortunately. 
 ---
+
+Dinglebob is a small interpreted language I made in Rust for fun -> It doesn't solve any real word problems unfortunately. 
 
 ## Running
 
@@ -11,12 +12,6 @@ From the Rust project root:
 
 ```bash
 cargo build --release
-```
-
-Your binary will be at:
-
-```bash
-./target/release/dinglebob
 ```
 
 ### Run modes
