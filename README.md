@@ -11,6 +11,7 @@ Dinglebob is a small interpreted language I made over the winter break with Rust
 * an `import` function that allows for multi-file projects 
 
 If you really wanna know the syntax, checkout [here](SYNTAX.md)
+
 --- 
 
 ## Running
