@@ -53,7 +53,7 @@ Your binary will be at:
 
 ## File extension
 
-Use whatever extension you want (`.dingle`, `.dinglebob`, etc). Examples below assume `.dingle`.
+Use whatever extension you want (`.dingle`, `.dinglebob`, etc). It doesn't really matter but I preferably use `.dingle`.
 
 ---
 
