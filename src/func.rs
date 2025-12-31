@@ -7,7 +7,6 @@ use crate::ast::BreakResult;
 use crate::token::Token;
 use std::cell::Ref;
 use std::cell::RefCell;
-use std::env::args_os;
 use std::io::LineWriter;
 use std::rc::Rc;
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -182,6 +181,28 @@ impl Func for Concat {
         concat_lst.append(&mut lst2.borrow().clone());
 
         return Ok(Value::List(Rc::new(RefCell::new(concat_lst))));
+    }
+}
+
+pub struct Execute; 
+
+impl Func for Execute { 
+
+    fn toString(&self) -> String {
+        return String::from("execute")
+    }
+
+    fn call(&self, interpreter: Interpreter, input_args: Vec<Value>) -> Result<Value, BreakResult>{
+        if input_args.len() != 2 { 
+            return Err(BreakResult::Error(format!(
+                "Arity error: 'execute' takes 1 arguments String, but got {}.",
+                input_args.len()
+            )));
+        }
+
+        let Value::String(file) = self.expect(input_args[0].clone(), "String")? else {unreachable!()};
+
+        return Ok(Value::None);
     }
 }
 

@@ -1,0 +1,16 @@
+define createCounter(start) {
+    let count = start;
+    
+    return lambda() {
+        count = count + 1;
+        print count;
+    };
+}
+
+let counterA = createCounter(0);
+let counterB = createCounter(100);
+
+counterA(); # 1
+counterA(); # 2
+counterB(); # 101
+counterA(); # 3

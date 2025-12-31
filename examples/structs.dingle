@@ -1,0 +1,15 @@
+define person(name, age) {
+    return lambda(msg) {
+        if msg == "name" { return name; }
+        if msg == "age"  { return age; }
+    };
+}
+
+let p1 = person("Alice", 20);
+let p2 = person("Bob", 25);
+
+print p1("name"); # Alice 
+print p2("name"); # Bob 
+
+print p1("age"); # 20
+print p2("age"); # 25

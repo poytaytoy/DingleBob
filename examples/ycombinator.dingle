@@ -1,0 +1,22 @@
+#Recursion exists in dinglebob but I mean you may wanna use it for lambda calls for some reason, idk 
+
+let Y = lambda(f) {
+    let g = lambda(x) {
+        return f(lambda(v) { 
+            return x(x)(v); 
+        });
+    };
+    return g(g);
+};
+
+let factorial_gen = lambda(rec) {
+    return lambda(n) {
+        if n == 0 { return 1; }
+        return n * rec(n - 1);
+    };
+};
+
+let fact = Y(factorial_gen);
+
+print fact(5); # 120
+print fact(6); # 720

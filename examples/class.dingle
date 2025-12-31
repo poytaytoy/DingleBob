@@ -1,0 +1,40 @@
+define BankAccount(owner, initial_balance) {
+    let balance = initial_balance;
+    let transactions = [];
+
+    let deposit = lambda(amount) {
+        balance = balance + amount;
+        append(transactions, "Deposit: " + amount);
+        return balance;
+    };
+
+    let withdraw = lambda(amount) {
+        if amount > balance {
+            print "Insufficient funds for " + owner;
+            return none;
+        }
+        balance = balance - amount;
+        append(transactions, "Withdraw: " + amount);
+        return balance;
+    };
+
+    return lambda(message) {
+        if message == "balance" { return balance; }
+        if message == "owner"   { return owner; }
+        if message == "deposit" { return deposit; }
+        if message == "withdraw" { return withdraw; }
+        if message == "history" { return transactions; }
+        
+        print "Method not found: " + message;
+    };
+}
+
+let my_acc = BankAccount("d2i-23", 1000);
+
+my_acc("deposit")(500);
+my_acc("withdraw")(200);
+
+print "Account Owner: " + my_acc("owner"); # Account Owner: d2i-23
+print "Final Balance: " + my_acc("balance"); # Final Balance: 1300
+print "History: " ; 
+print my_acc("history"); # ["Deposit: 500", "Withdraw: 200"]

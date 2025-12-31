@@ -148,6 +148,20 @@ let xs = [1, 2, 3];
 let empty = [];
 ```
 
+Note that lists are essentially references like in python, so: 
+
+```
+let xs = [1, 2, 3]; 
+let a = xs; 
+
+a[1] = "bob"; 
+
+print xs; #[1, "bob", 3]
+print a; #[1, "bob", 3]
+```
+
+Use `copy` as documeted below to create two seperate instances of a list.
+
 ---
 
 ## Truthiness rules
@@ -371,12 +385,12 @@ print "Time" + (timeit() - intial_time);
 
 ### `abs(x) -> Float`
 
-* accepts Float (and also Int coerces to Float)
+* accepts Float (and also Int turns to Float)
 
 ```dingle
 print abs(-3);
 print abs(-3.5);
-```
+```                                                                                                                     
 
 ### `len(list) -> Int`
 

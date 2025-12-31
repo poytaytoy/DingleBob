@@ -16,9 +16,6 @@ use std::rc::Rc;
 use std::cell::RefCell; 
 use crate::func::*; 
 
-
-//TODO FIX THE PRIVACY LEVELS OF THE INTERPRET (This removed but it'd be very helpful to properly learn how trait works in Rust )
-
 pub struct Interpreter{
     pub global_environment: Rc<RefCell<Environment>>,
     pub is_prime: bool, 

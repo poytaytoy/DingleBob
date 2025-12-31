@@ -1,0 +1,80 @@
+define quick_sort(xs) {
+    if len(xs) <= 1 {
+        return xs;
+    }
+
+    let pivot = xs[0];
+    let less = [];
+    let equal = [];
+    let greater = [];
+
+    for (let i = 0; i < len(xs); i = i + 1) {
+        let val = xs[i];
+        if val < pivot {
+            append(less, val);
+        } else {
+            if val == pivot {
+                append(equal, val);
+            } else {
+                append(greater, val);
+            }
+        }
+    }
+
+    return concat(concat(quick_sort(less), equal), quick_sort(greater));
+}
+
+define merge_sort(xs) {
+    if len(xs) <= 1 {
+        return xs;
+    }
+
+    let mid = len(xs) / 2;
+    mid = abs(mid); 
+
+    let left = [];
+    let right = [];
+
+    for (let i = 0; i < len(xs); i = i + 1) {
+        if i < mid {
+            append(left, xs[i]);
+        } else {
+            append(right, xs[i]);
+        }
+    }
+
+    return merge(merge_sort(left), merge_sort(right));
+}
+
+define merge(left, right) {
+    let result = [];
+    let i = 0;
+    let j = 0;
+
+    while i < len(left) and j < len(right) {
+        if left[i] <= right[j] {
+            append(result, left[i]);
+            i = i + 1;
+        } else {
+            append(result, right[j]);
+            j = j + 1;
+        }
+    }
+
+    # Append remaining elements
+    while i < len(left) {
+        append(result, left[i]);
+        i = i + 1;
+    }
+    while j < len(right) {
+        append(result, right[j]);
+        j = j + 1;
+    }
+
+    return result;
+}
+
+let unsorted = [10, -1, 2, 5, 0, 9, 3];
+
+print merge_sort(copy(unsorted)); #[-1, 0, 2, 3, 5, 9, 10]
+print quick_sort(copy(unsorted)); # [1, 2, 3, 5, 5, 6, 9]

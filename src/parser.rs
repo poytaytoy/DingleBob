@@ -330,7 +330,7 @@ impl Parser{
     }
 
     fn assignment(&mut self) -> ParseResult<Expression>{ 
-        let expr = self.index()?; 
+        let expr = self.or()?; 
 
         if self.check(TokenKind::EQUAL){
             let equal_store = (&self.tokens_list[self.curr_index]).clone();
@@ -340,26 +340,6 @@ impl Parser{
         }
 
         Ok(expr)
-    }
-
-    fn index(&mut self) -> ParseResult<Expression>{
-        let left_expr = self.or()?; 
-
-        if self.check(TokenKind::LEFT_SQUARE){
-            self.curr_index += 1; 
-            let right_expr = self.expression()?; 
-            
-            if !self.check(TokenKind::RIGHT_SQUARE){
-                return self.handle_error("Expected ']' to close index expression.");
-            }
-
-            let right_brace_store = (&self.tokens_list[self.curr_index]).clone();
-            self.curr_index += 1; 
-
-            return Ok(Expression::Index(Box::new(left_expr), right_brace_store, Box::new(right_expr)));
-        }
-
-        Ok(left_expr)
     }
 
     fn or(&mut self) -> ParseResult<Expression>{
@@ -453,7 +433,7 @@ impl Parser{
     }
 
     fn call(&mut self) -> ParseResult<Expression> {
-        let mut expr = self.primary()?; 
+        let mut expr = self.index()?; 
 
         loop{
             if !self.check(TokenKind::LEFT_PAREN){
@@ -484,6 +464,27 @@ impl Parser{
         }
 
         Ok(expr)
+    }
+
+    fn index(&mut self) -> ParseResult<Expression>{
+        let left_expr = self.primary()?; 
+
+        if self.check(TokenKind::LEFT_SQUARE){
+
+            self.curr_index += 1; 
+            let right_expr = self.expression()?; 
+            
+            if !self.check(TokenKind::RIGHT_SQUARE){
+                return self.handle_error("Expected ']' to close index expression.");
+            }
+
+            let right_brace_store = (&self.tokens_list[self.curr_index]).clone();
+            self.curr_index += 1; 
+
+            return Ok(Expression::Index(Box::new(left_expr), right_brace_store, Box::new(right_expr)));
+        }
+
+        Ok(left_expr)
     }
 
     fn primary(&mut self) -> ParseResult<Expression>{
@@ -585,7 +586,7 @@ impl Parser{
         let mut content: Vec<Expression> = Vec::new();
         loop{
             if !self.check(TokenKind::RIGHT_SQUARE){
-                content.push(self.index()?); 
+                content.push(self.or()?); 
 
                 if !self.check(TokenKind::COMMA){
                     break;
