@@ -51,7 +51,7 @@ Your binary will be at:
 
 ---
 
-I also provided a `dummy.dingle`, so if you want to directly play with it you, you can also just modify the file and directly run from the root directory:  
+I also provided a `dummy.dingle`, so if you want to directly play with it, you can also modify the file and run from the root directory:  
 
 ```bash
 ./target/release/dinglebob dummy.dingle
