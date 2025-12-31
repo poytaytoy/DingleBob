@@ -49,11 +49,11 @@ Your binary will be at:
 ./target/release/dinglebob path/to/program.dingle
 ```
 
----
-
 ## File extension
 
 Use whatever you want (`.dingle`, `.dinglebob`, etc). Examples below assume `.dingle`.
+
+---
 
 ## Examples 
 
@@ -63,7 +63,7 @@ The dinglebob language is pretty limited. It doesn't have objected oriented prog
 
 Enough bantering and here's how you would implement something like sorting. (also on `exmaples/sort.dingle`)
 
-```
+```js
 define quick_sort(xs) {
     if len(xs) <= 1 {
         return xs;
@@ -96,7 +96,7 @@ print quick_sort(copy(unsorted)); # [-1, 0, 2, 3, 5, 9, 10]
 
 Lists in dinglebob are like references in python. You need to copy it in order to create a seperate instnace of it. Hence, you see `copy` being used. You can also access this code via: 
 
-```
+```js
 import ("examples/sort.dingle");
 
 print quick_sort([10, -1, 2, 5, 0, 9, 3])
@@ -108,7 +108,7 @@ print quick_sort([10, -1, 2, 5, 0, 9, 3])
 
 That aside, while `structs` and `classes` are not implemented, you can mimic them because of how dinglebob captures the entire environment scope with its closures on funcitons. For structs (also on `examples/structs.dingle`): 
 
-```
+```js
 define person(name, age) {
     return lambda(msg) {
         if msg == "name" { return name; }
@@ -124,7 +124,7 @@ print p("age"); # 20
 
 Meanwhile, for classes (also on `examples/class.dingle`):
 
-```
+```js
 define BankAccount(owner, initial_balance) {
     let balance = initial_balance;
     let transactions = [];
@@ -167,7 +167,7 @@ my_acc("withdraw")(200);
 
 To end things off, I also learned a lot of lambda calculus, so if for whatever reason you want to implement recursion, for lambda functions, the Y-Combinator can be implemented like this (also on examples/ycombinator.dingle): 
 
-```
+```js
 let Y = lambda(f) {
     let g = lambda(x) {
         return f(lambda(v) { 
