@@ -2,7 +2,7 @@
 
 Single-line comments start with `#` and go to the end of the line:
 
-```dingle
+```js
 # this is a comment
 let x = 3; # comment after code
 ```
@@ -23,7 +23,7 @@ Most “single-line” statements must end in a semicolon:
 
 Example:
 
-```dingle
+```js
 let x = 10;
 print x + 2;
 x = x + 1;
@@ -33,7 +33,7 @@ x = x + 1;
 
 Blocks create a new scope:
 
-```dingle
+```js
 {
     let x = 5;
     print x;
@@ -48,13 +48,13 @@ Blocks create a new scope:
 
 Represents “no value”:
 
-```dingle
+```js
 let x = none;
 ```
 
 ### Booleans
 
-```dingle
+```js
 true
 false
 ```
@@ -64,7 +64,7 @@ false
 * integers parse as `Int`
 * decimals parse as `Float`
 
-```dingle
+```js
 let a = 123;
 let b = 3.1415;
 ```
@@ -75,7 +75,7 @@ let b = 3.1415;
 
 Double quotes:
 
-```dingle
+```js
 let s = "hello";
 print s;
 ```
@@ -86,7 +86,7 @@ Strings can include newlines.
 
 List literal:
 
-```dingle
+```js
 let xs = [1, 2, 3];
 let empty = [];
 ```
@@ -154,14 +154,14 @@ In conditions (`if`, `while`, logical ops):
 
 ### Declare
 
-```dingle
+```js
 let x = 10;
 let y;        # is just a syntactic sugar for y = none; 
 ```
 
 ### Assign
 
-```dingle
+```js
 x = x + 1;
 ```
 
@@ -178,7 +178,7 @@ Assignment targets can be:
 
 No parentheses required around the condition. **Bodies must be blocks.**
 
-```dingle
+```js
 if x > 0 {
     print "positive";
 } else {
@@ -190,7 +190,7 @@ if x > 0 {
 
 Condition expression followed by a block:
 
-```dingle
+```js
 while x < 5 {
     print x;
     x = x + 1;
@@ -201,7 +201,7 @@ while x < 5 {
 
 Form:
 
-```dingle
+```js
 for ( initializer ; condition ; increment ) { ... }
 ```
 
@@ -216,7 +216,7 @@ for ( initializer ; condition ; increment ) { ... }
 
 Example:
 
-```dingle
+```js
 for (let i = 0; i < 5; i = i + 1) {
     print i;
 }
@@ -228,7 +228,7 @@ Internally this desugars into a `while` loop.
 
 Only valid inside loops:
 
-```dingle
+```js
 while true {
     break;
 }
@@ -242,7 +242,7 @@ while true {
 
 Form:
 
-```dingle
+```js
 define name(param1, param2, ...) {
     ...
 }
@@ -250,7 +250,7 @@ define name(param1, param2, ...) {
 
 Example:
 
-```dingle
+```js
 define add(a, b) {
     return a + b;
 }
@@ -271,7 +271,7 @@ Return is only allowed inside functions (top-level `return` is an interpreter er
 
 Lambdas are expressions:
 
-```dingle
+```js
 let f = lambda(x) {
     return x * x;
 };
@@ -295,7 +295,7 @@ In Dinglebob, lambdas capture the surrounding environment.
 
 ### Example: function factory
 
-```dingle
+```js
 define mkAdder(k) {
     return lambda(x) {
         return x + k;   # uses k from the outer scope
@@ -309,7 +309,7 @@ print add10(7);   # 17
 
 ### Example: captured state (like private memory)
 
-```dingle
+```js
 define counter() {
     let x = 0;
     return lambda() {
@@ -326,7 +326,7 @@ print c();  # 3
 
 **Key idea:** each closure keeps its own captured variables, so creating two counters gives independent state:
 
-```dingle
+```js
 let a = counter();
 let b = counter();
 print a();  # 1
@@ -339,14 +339,14 @@ print b();  # 1
 
 ### Index read
 
-```dingle
+```js
 let xs = [10, 20, 30];
 print xs[1];     # 20
 ```
 
 ### Index write
 
-```dingle
+```js
 xs[1] = 999;
 print xs;        # [10, 999, 30]
 ```
@@ -382,14 +382,14 @@ print "Time" + (timeit() - intial_time);
 
 * accepts Float (and also Int turns to Float)
 
-```dingle
+```js
 print abs(-3);
 print abs(-3.5);
 ```                                                                                                                     
 
 ### `len(list) -> Int`
 
-```dingle
+```js
 print len([1,2,3]);  # 3
 ```
 
@@ -397,7 +397,7 @@ print len([1,2,3]);  # 3
 
 Makes a new list containing cloned elements:
 
-```dingle
+```js
 let a = [1,2];
 let b = copy(a);
 b[0] = 999;
@@ -409,7 +409,7 @@ print b; # [999,2]
 
 Mutates the list and returns it:
 
-```dingle
+```js
 let xs = [1];
 append(xs, 2);
 print xs;  # [1,2]
@@ -419,7 +419,7 @@ print xs;  # [1,2]
 
 Returns a new list:
 
-```dingle
+```js
 print concat([1,2], [3,4]); # [1,2,3,4]
 ```
 
@@ -440,7 +440,7 @@ Dinglebob has 4 main pipeline errors
 
 Dinglebob supports importing and executing another file at runtime:
 
-```dingle
+```js
 import("test2.dingle");
 ```
 
@@ -454,7 +454,7 @@ Example:
 
 **test2.dingle**
 
-```dingle
+```js
 let x = 10;
 let _secret = 999;
 
@@ -463,7 +463,7 @@ define inc(n) { return n + 1; }
 
 **test.dingle**
 
-```dingle
+```js
 import("test2.dingle");
 
 print x;       # 10
