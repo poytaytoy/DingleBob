@@ -15,7 +15,7 @@ Dinglebob is a small, dynamically-typed interpreted language I wrote in Rust. It
 * Implement OOP
 * Build a standard library
 
-I recommend skimming the syntax guide [here](SYNTAX.md) — especially the sections on **lists** and **closures**.
+I recommend skimming the syntax guide [here](SYNTAX.md) -> especially the sections on **lists** and **closures**.
 
 ---
 
@@ -59,11 +59,11 @@ Use whatever extension you want (`.dingle`, `.dinglebob`, etc). Examples below a
 
 ## Examples
 
-Dinglebob is pretty limited. There’s no object-oriented programming yet, and while it’s technically multi-paradigm, it definitely leans functional — mostly because I built it right after finishing a functional programming course.
+Dinglebob is pretty limited. There’s no object-oriented programming yet, and while it’s technically multi-paradigm, it definitely leans functional -> mostly because I built it right after finishing a functional programming course.
 
 ### Sorting
 
-Enough yapping — here’s how you could implement sorting (also in `examples/sort.dingle`):
+Enough yapping -> here’s how you could implement sorting (also in `examples/sort.dingle`):
 
 ```js
 define quick_sort(xs) {
