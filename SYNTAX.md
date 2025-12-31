@@ -1,16 +1,3 @@
-# Dinglebob 
-
-Dinglebob is a small interpreted language I made over the winter break with:
-
-* variables (`let`)
-* blocks / lexical scopes (`{ ... }`)
-* `if / else`, `while`, and `for`
-* functions (`define`) + lambdas (`lambda`)
-* lists + indexing (`[ ... ]`, `xs[i]`)
-* a handful of built-in functions (`timeit`, `abs`, `len`, `copy`, `append`, `concat`)
-
---- 
-
 ## Comments
 
 Single-line comments start with `#` and go to the end of the line:
@@ -93,7 +80,7 @@ let s = "hello";
 print s;
 ```
 
-Strings can include newlines (your scanner tracks line numbers inside strings).
+Strings can include newlines.
 
 ### Lists
 
@@ -405,7 +392,7 @@ Dinglebob supports importing and executing another file at runtime:
 import("test2.dingle");
 ```
 
-What it does (based on your current implementation):
+What it does: 
 
 * Reads + executes the target file.
 * Exports its top-level bindings into the current program after execution.
