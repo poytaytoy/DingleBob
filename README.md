@@ -1,6 +1,6 @@
 # Dinglebob 
 
-Dinglebob is a small interpreted language I made over the winter break with:
+Dinglebob is a small interpreted language I made in Rust with:
 
 * variables (`let`)
 * blocks / lexical scopes (`{ ... }`)
