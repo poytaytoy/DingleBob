@@ -1,23 +1,23 @@
-# Dinglebob 
+# Dinglebob
 
-Dinglebob is a small dynamically typed interpretted language that I made with Rust:
+Dinglebob is a small, dynamically-typed interpreted language I wrote in Rust. It supports:
 
 * variables (`let`)
 * blocks / lexical scopes (`{ ... }`)
 * `if / else`, `while`, and `for`
 * functions (`define`) + lambdas (`lambda`)
 * lists + indexing (`[ ... ]`, `xs[i]`)
-* a handful of built-in functions (`timeit`, `abs`, `len`, `copy`, `append`, `concat`)
-* an `import` function that allows for multi-file projects 
+* a handful of built-ins (`timeit`, `abs`, `len`, `copy`, `append`, `concat`)
+* an `import` function for multi-file projects
 
-TODO: 
+**TODO**
 
 * Implement OOP
-* Make a standard library
+* Build a standard library
 
-I recommend you skim over the syntax from [here](SYNTAX.md), especially the part on lists and closure. 
+I recommend skimming the syntax guide [here](SYNTAX.md) — especially the sections on **lists** and **closures**.
 
---- 
+---
 
 ## Running
 
@@ -49,19 +49,21 @@ Your binary will be at:
 ./target/release/dinglebob path/to/program.dingle
 ```
 
+---
+
 ## File extension
 
-Use whatever you want (`.dingle`, `.dinglebob`, etc). Examples below assume `.dingle`.
+Use whatever extension you want (`.dingle`, `.dinglebob`, etc). Examples below assume `.dingle`.
 
 ---
 
-## Examples 
+## Examples
 
-The dinglebob language is pretty limited. It doesn't have objected oriented programming, and while it's technically a multi-paradigm language, it leans towards a functional programming language. This is a natural result of just completing a functional programming course. 
+Dinglebob is pretty limited. There’s no object-oriented programming yet, and while it’s technically multi-paradigm, it definitely leans functional — mostly because I built it right after finishing a functional programming course.
 
 ### Sorting
 
-Enough bantering and here's how you would implement something like sorting. (also on `exmaples/sort.dingle`)
+Enough yapping — here’s how you could implement sorting (also in `examples/sort.dingle`):
 
 ```js
 define quick_sort(xs) {
@@ -94,19 +96,23 @@ let unsorted = [10, -1, 2, 5, 0, 9, 3];
 print quick_sort(copy(unsorted)); # [-1, 0, 2, 3, 5, 9, 10]
 ```
 
-Lists in dinglebob are like references in python. You need to copy it in order to create a seperate instnace of it. Hence, you see `copy` being used. You can also access this code via: 
+Lists in Dinglebob behave like references in Python, so you’ll often want `copy()` if you need a separate instance.
+
+You can also import this file and call it directly:
 
 ```js
-import ("examples/sort.dingle");
+import("examples/sort.dingle");
 
-print quick_sort([10, -1, 2, 5, 0, 9, 3])
+print quick_sort([10, -1, 2, 5, 0, 9, 3]);
 ```
 
 ---
 
-### Structs and Classes
+### Structs and Classes (kinda)
 
-That aside, while `structs` and `classes` are not implemented, you can mimic them because of how dinglebob captures the entire environment scope with its closures on funcitons. For structs (also on `examples/structs.dingle`): 
+Structs/classes aren’t implemented, but you can fake them thanks to closures capturing scope.
+
+**Struct-like (also in `examples/structs.dingle`)**:
 
 ```js
 define person(name, age) {
@@ -118,11 +124,11 @@ define person(name, age) {
 
 let p = person("Alice", 20);
 
-print p("name"); # Alice 
-print p("age"); # 20
+print p("name"); # Alice
+print p("age");  # 20
 ```
 
-Meanwhile, for classes (also on `examples/class.dingle`):
+**Class-like (also in `examples/class.dingle`)**:
 
 ```js
 define BankAccount(owner, initial_balance) {
@@ -151,7 +157,7 @@ define BankAccount(owner, initial_balance) {
         if message == "deposit" { return deposit; }
         if message == "withdraw" { return withdraw; }
         if message == "history" { return transactions; }
-        
+
         print "Method not found: " + message;
     };
 }
@@ -160,18 +166,19 @@ let my_acc = BankAccount("d2i-23", 1000);
 
 my_acc("deposit")(500);
 my_acc("withdraw")(200);
-
 ```
+
+---
 
 ### Y-Combinator
 
-To end things off, I also learned a lot of lambda calculus, so if for whatever reason you want to implement recursion, for lambda functions, the Y-Combinator can be implemented like this (also on examples/ycombinator.dingle): 
+I also messed around with lambda calculus, so if you *really* want recursion for lambdas, you can use the Y-combinator (also in `examples/ycombinator.dingle`):
 
 ```js
 let Y = lambda(f) {
     let g = lambda(x) {
-        return f(lambda(v) { 
-            return x(x)(v); 
+        return f(lambda(v) {
+            return x(x)(v);
         });
     };
     return g(g);
@@ -188,7 +195,7 @@ let fact = Y(factorial_gen);
 
 print fact(5); # 120
 ```
+
 ---
 
-And that's about it for dinglebob, there isn't really much practical usage and I made it for fun to learn more about programming languages. 
-
+And yeah, that’s basically Dinglebob. There isn’t much practical uses -> it's just for me to learn more about programming languages. 
