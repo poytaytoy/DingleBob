@@ -1,14 +1,6 @@
 # Dinglebob 
 
-Dinglebob is a small interpreted language I made in Rust with:
-
-* variables (`let`)
-* blocks / lexical scopes (`{ ... }`)
-* `if / else`, `while`, and `for`
-* functions (`define`) + lambdas (`lambda`)
-* lists + indexing (`[ ... ]`, `xs[i]`)
-* a handful of built-in functions (`timeit`, `abs`, `len`, `copy`, `append`, `concat`)
-
+Dinglebob is a small interpreted language I made in Rust for fun -> It doesn't solve any real word problems unfortunately. 
 ---
 
 ## Running
@@ -119,15 +111,18 @@ if x > 0 {
     print "no";
 }
 
-while x < 5 {
+while true {
     x = x + 1;
+
+    if x < 5 {
+        break;
+    }
 }
 
 for (let i = 0; i < 5; i = i + 1) {
     print i;
 }
 
-break;   # only inside loops
 ```
 
 ---
@@ -150,11 +145,6 @@ let f = lambda(x) { return x * x; };
 print f(5);
 ```
 
-Notes:
-
-* `return;` returns `none`
-* closures capture surrounding environment
-
 ---
 
 ## Lists / indexing
@@ -165,11 +155,8 @@ print xs[1];   # 20
 xs[1] = 999;
 print xs;      # [10, 999, 30]
 ```
+Notes:
 
-Rules:
-
-* index must be an `Int`
-* bounds checked (out of range = runtime error)
 * lists are reference-like; use `copy()` to duplicate
 
 ---
@@ -185,15 +172,6 @@ Rules:
 
 ---
 
-## Error stages
-
-1. **Scanner**: bad characters, unterminated strings
-2. **Parser**: malformed syntax (missing `;`, `}`, etc.)
-3. **Resolver**: duplicate definitions in same scope
-4. **Interpreter**: type errors, calling non-functions, bad indexing, invalid assignment targets
-
----
-
 ## Imports
 
 Dinglebob supports importing and executing another file at runtime:
@@ -202,7 +180,7 @@ Dinglebob supports importing and executing another file at runtime:
 import("test2.dingle");
 ```
 
-What it does (based on your current implementation):
+What it does:
 
 * Reads + executes the target file.
 * Exports its top-level bindings into the current program after execution.
