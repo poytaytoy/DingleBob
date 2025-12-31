@@ -23,7 +23,7 @@ define BankAccount(owner, initial_balance) {
         if message == "owner"   { return owner; }
         if message == "deposit" { return deposit; }
         if message == "withdraw" { return withdraw; }
-        if message == "history" { return transactions; }
+        if message == "history" { return copy(transactions); }
         
         print "Method not found: " + message;
     };

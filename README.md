@@ -1,6 +1,6 @@
 # Dinglebob
 
-Dinglebob is a small, dynamically-typed interpreted language I wrote in Rust. It supports:
+Dinglebob is a small, dynamically-typed interpreted language I wrote in Rust that evaluates in applicative order. It supports:
 
 * variables (`let`)
 * blocks / lexical scopes (`{ ... }`)
@@ -12,7 +12,7 @@ Dinglebob is a small, dynamically-typed interpreted language I wrote in Rust. It
 
 **TODO**
 
-* Implement OOP
+* Implement OOP (Altho it technically kinda exists)
 * Build a standard library
 
 I recommend skimming the syntax guide [here](SYNTAX.md) -> especially the sections on **lists** and **closures**.
@@ -50,6 +50,12 @@ Your binary will be at:
 ```
 
 ---
+
+I also provided a `dummy.dingle`, so if you want to directly play with it you, you can also just modify the file and directly run from the root directory:  
+
+```bash
+./target/release/dinglebob dummy.dingle
+```
 
 ## File extension
 
@@ -156,7 +162,7 @@ define BankAccount(owner, initial_balance) {
         if message == "owner"   { return owner; }
         if message == "deposit" { return deposit; }
         if message == "withdraw" { return withdraw; }
-        if message == "history" { return transactions; }
+        if message == "history" { return copy(transactions); } 
 
         print "Method not found: " + message;
     };
@@ -172,13 +178,13 @@ my_acc("withdraw")(200);
 
 ### Y-Combinator
 
-I also messed around with lambda calculus, so if you *really* want recursion for lambdas, you can use the Y-combinator (also in `examples/ycombinator.dingle`):
+Dinglebob evaluates in applicative order, so if you *really* want recursion for lambdas, you can use the Z-combinator (also in `examples/zcombinator.dingle`):
 
 ```js
 let Y = lambda(f) {
     let g = lambda(x) {
-        return f(lambda(v) {
-            return x(x)(v);
+        return f(lambda(v) { 
+            return x(x)(v); 
         });
     };
     return g(g);
