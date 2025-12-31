@@ -283,6 +283,58 @@ They capture the current environment (closure-like behavior).
 
 ---
 
+Sure — here’s a clean README-sized section you can paste.
+
+---
+
+## Closures
+
+A **closure** is a function (usually a `lambda`) that **remembers variables from the scope where it was created**, even after that scope has “finished”.
+
+In Dinglebob, lambdas capture the surrounding environment.
+
+### Example: function factory
+
+```dingle
+define mkAdder(k) {
+    return lambda(x) {
+        return x + k;   # uses k from the outer scope
+    };
+}
+
+let add10 = mkAdder(10);
+print add10(3);   # 13
+print add10(7);   # 17
+```
+
+### Example: captured state (like private memory)
+
+```dingle
+define counter() {
+    let x = 0;
+    return lambda() {
+        x = x + 1;      # modifies captured variable
+        return x;
+    };
+}
+
+let c = counter();
+print c();  # 1
+print c();  # 2
+print c();  # 3
+```
+
+**Key idea:** each closure keeps its own captured variables, so creating two counters gives independent state:
+
+```dingle
+let a = counter();
+let b = counter();
+print a();  # 1
+print a();  # 2
+print b();  # 1
+```
+
+
 ## Lists & indexing
 
 ### Index read

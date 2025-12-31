@@ -74,7 +74,7 @@ define merge(left, right) {
     return result;
 }
 
-let unsorted = [10, -1, 2, 5, 0, 9, 3];
+let _unsorted = [10, -1, 2, 5, 0, 9, 3];
 
-print merge_sort(copy(unsorted)); #[-1, 0, 2, 3, 5, 9, 10]
-print quick_sort(copy(unsorted)); # [1, 2, 3, 5, 5, 6, 9]
+print merge_sort(copy(_unsorted)); # [-1, 0, 2, 3, 5, 9, 10]
+print quick_sort(copy(_unsorted)); # [1, 2, 3, 5, 5, 6, 9]
