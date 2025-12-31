@@ -15,7 +15,7 @@ TODO:
 * Implement OOP
 * Make a standard library
 
-I recommend you skim over the syntax from [here](SYNTAX.md), especially the part of lists and closure. 
+I recommend you skim over the syntax from [here](SYNTAX.md), especially the part on lists and closure. 
 
 --- 
 
@@ -57,9 +57,11 @@ Use whatever you want (`.dingle`, `.dinglebob`, etc). Examples below assume `.di
 
 ## Examples 
 
-The dinglebob language is pretty limited. It doesn't have objected oriented programming, and while it's technically a multi-paradigm language, it leans towards a functional programming language. This is a natural result of just completing a functional programming course :P. 
+The dinglebob language is pretty limited. It doesn't have objected oriented programming, and while it's technically a multi-paradigm language, it leans towards a functional programming language. This is a natural result of just completing a functional programming course. 
 
-Enough bantering and here's how you would implement something like sorting. (You can also find it on `exmaples/sort.dingle`)
+### Sorting
+
+Enough bantering and here's how you would implement something like sorting. (also on `exmaples/sort.dingle`)
 
 ```
 define quick_sort(xs) {
@@ -100,7 +102,11 @@ import ("examples/sort.dingle");
 print quick_sort([10, -1, 2, 5, 0, 9, 3])
 ```
 
-That aside, while `classes` and `structs` are not implemented, you can mimic them because of how dinglebob captures the entire environment scope with its closures on funcitons. For structs (also on `examples/structs.dingle`): 
+---
+
+### Structs and Classes
+
+That aside, while `structs` and `classes` are not implemented, you can mimic them because of how dinglebob captures the entire environment scope with its closures on funcitons. For structs (also on `examples/structs.dingle`): 
 
 ```
 define person(name, age) {
@@ -157,6 +163,8 @@ my_acc("withdraw")(200);
 
 ```
 
+### Y-Combinator
+
 To end things off, I also learned a lot of lambda calculus, so if for whatever reason you want to implement recursion, for lambda functions, the Y-Combinator can be implemented like this (also on examples/ycombinator.dingle): 
 
 ```
@@ -180,6 +188,7 @@ let fact = Y(factorial_gen);
 
 print fact(5); # 120
 ```
+---
 
 And that's about it for dinglebob, there isn't really much practical usage and I made it for fun to learn more about programming languages. 
 
