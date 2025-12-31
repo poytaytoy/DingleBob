@@ -283,10 +283,6 @@ They capture the current environment (closure-like behavior).
 
 ---
 
-Sure — here’s a clean README-sized section you can paste.
-
----
-
 ## Closures
 
 A **closure** is a function (usually a `lambda`) that **remembers variables from the scope where it was created**, even after that scope has “finished”.
