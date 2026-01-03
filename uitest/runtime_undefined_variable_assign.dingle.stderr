@@ -1,0 +1,7 @@
+Error: Interpreter Error
+   ╭─[ uitest/runtime_undefined_variable_assign.dingle:1:1 ]
+   │
+ 1 │ x = 3;
+   │ ┬  
+   │ ╰── Assignment to undefined variable 'x'. Declare it before assigning.
+───╯

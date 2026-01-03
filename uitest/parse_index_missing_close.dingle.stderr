@@ -1,0 +1,7 @@
+Error: Parser Error
+   ╭─[ uitest/parse_index_missing_close.dingle:1:2 ]
+   │
+ 2 │ a[0;
+   │ ──┬─  
+   │   ╰─── Expected ']' to close index expression.
+───╯

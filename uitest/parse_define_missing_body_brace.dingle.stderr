@@ -1,0 +1,7 @@
+Error: Parser Error
+   ╭─[ uitest/parse_define_missing_body_brace.dingle:1:1 ]
+   │
+ 1 │ define f(x) return x;
+   │        ─────┬─────  
+   │             ╰─────── Expected '{' to start function body.
+───╯

@@ -1,0 +1,7 @@
+Error: Parser Error
+   ╭─[ uitest/parse_let_missing_equal_or_semicolon.dingle:1:1 ]
+   │
+ 1 │ let x 3;
+   │     ─┬─  
+   │      ╰─── Expected '=' or ';' after variable name in variable declaration.
+───╯

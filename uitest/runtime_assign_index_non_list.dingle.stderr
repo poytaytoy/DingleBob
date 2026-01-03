@@ -1,0 +1,7 @@
+Error: Interpreter Error
+   ╭─[ uitest/runtime_assign_index_non_list.dingle:1:2 ]
+   │
+ 2 │ a[0] = 2;
+   │    ┬  
+   │    ╰── Invalid assignment: expected a List for indexing, but got Int.
+───╯

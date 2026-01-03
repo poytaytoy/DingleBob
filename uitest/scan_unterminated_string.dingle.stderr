@@ -1,0 +1,7 @@
+Error: Scanner Error
+   ╭─[ uitest/scan_unterminated_string.dingle:1:2 ]
+   │
+ 1 │ print "hello;
+   │       ────┬───  
+   │           ╰───── Unterminated string literal: expected a closing '"'.
+───╯

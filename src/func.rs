@@ -17,6 +17,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 
 pub trait Func { 
+    fn isDefault(&self) -> bool; 
     fn toString(&self) -> String; 
     fn expect(&self, args: Value, value_type: &str) -> Result<Value, BreakResult> {
         let err = |got: Value| {
@@ -49,6 +50,10 @@ pub trait Func {
 pub struct Timeit; 
 
 impl Func for Timeit {
+    fn isDefault(&self) -> bool {
+        true
+    }
+
     fn toString(&self ) -> String {
         return String::from("timeit")
     }
@@ -74,6 +79,9 @@ impl Func for Timeit {
 pub struct Abs; 
 
 impl Func for Abs { 
+    fn isDefault(&self) -> bool {
+        true
+    }
 
     fn toString(&self ) -> String {
         return String::from("abs")
@@ -97,6 +105,10 @@ pub struct Len;
 
 impl Func for Len { 
 
+    fn isDefault(&self) -> bool {
+        true
+    }
+
     fn toString(&self ) -> String {
         return String::from("len")
     }
@@ -119,6 +131,10 @@ pub struct Copy;
 
 impl Func for Copy { 
 
+    fn isDefault(&self) -> bool {
+        true
+    }
+
     fn toString(&self ) -> String {
         return String::from("copy")
     }
@@ -140,6 +156,10 @@ impl Func for Copy {
 pub struct Append; 
 
 impl Func for Append { 
+
+    fn isDefault(&self) -> bool {
+        true
+    }
 
     fn toString(&self) -> String {
         return String::from("append")
@@ -165,6 +185,10 @@ impl Func for Append {
 pub struct Concat; 
 
 impl Func for Concat { 
+
+    fn isDefault(&self) -> bool {
+        true
+    }
 
     fn toString(&self) -> String {
         return String::from("concat")
@@ -192,14 +216,18 @@ pub struct Import;
 
 impl Func for Import { 
 
+    fn isDefault(&self) -> bool {
+        false
+    }
+
     fn toString(&self) -> String {
         return String::from("import")
     }
 
     fn call(&self, interpreter: Interpreter, input_args: Vec<Value>) -> Result<Value, BreakResult>{
 
-        let mut resolver_exe = Resolver::new();
-        let mut interpreter_exe = Interpreter::new(true, resolver_exe.give_local());
+        let mut resolver_exe = Resolver::new(false);
+        let mut interpreter_exe = Interpreter::new(true, resolver_exe.give_local(), false);
 
         if input_args.len() != 1 { 
             return Err(BreakResult::Error(format!(
@@ -216,20 +244,20 @@ impl Func for Import {
             std::process::exit(1);
         });
 
-        let token_result = scan(&contents, false, path);
+        let token_result = scan(&contents, false, path, false);
 
         if let Err(msg) = token_result{
              return Err(BreakResult::Error(format!(
-                "{}", msg
+                ""
             )));
         }
 
-        let mut parser = Parser::new(token_result.unwrap());
-        let parsed_result = parser.parse();
+        let mut parser = Parser::new(token_result.unwrap(), false);
+        let parsed_result: Result<Vec<Statement>, String> = parser.parse();
 
         if let Err(msg) = parsed_result{
             return Err(BreakResult::Error(format!(
-                "{}", msg
+                ""
             )));
         }
 
@@ -237,7 +265,7 @@ impl Func for Import {
 
         if let Err(msg) = resolver_result{
             return Err(BreakResult::Error(format!(
-                "{}", msg
+                ""
             )));
         }
 
@@ -245,7 +273,7 @@ impl Func for Import {
 
         if let Err(msg) = interpreter_result{
             return Err(BreakResult::Error(format!(
-                "{}", msg
+                ""
             )));
         }
 
@@ -280,6 +308,10 @@ pub struct Function{
 }
 
 impl Func for Function {
+
+    fn isDefault(&self) -> bool {
+        false
+    }
 
     fn toString(&self) -> String {
         return self.name.lexeme.clone();
@@ -317,6 +349,10 @@ pub struct Lambda{
 }
 
 impl Func for Lambda {
+
+    fn isDefault(&self) -> bool {
+        false
+    }
 
     fn toString(&self) -> String {
         let mut text = String::from("Lambda(");

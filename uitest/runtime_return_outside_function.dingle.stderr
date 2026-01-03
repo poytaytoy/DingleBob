@@ -1,0 +1,7 @@
+Error: Interpreter Error
+   ╭─[ uitest/runtime_return_outside_function.dingle:1:1 ]
+   │
+ 1 │ return 1;
+   │        ┬  
+   │        ╰── 'return' can only be used inside a function body.
+───╯

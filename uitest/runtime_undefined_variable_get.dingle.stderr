@@ -1,0 +1,7 @@
+Error: Interpreter Error
+   ╭─[ uitest/runtime_undefined_variable_get.dingle:1:1 ]
+   │
+ 1 │ print x;
+   │       ┬  
+   │       ╰── Undefined variable 'x': no binding found in this scope (or any enclosing scope).
+───╯

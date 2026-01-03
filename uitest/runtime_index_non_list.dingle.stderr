@@ -1,0 +1,7 @@
+Error: Interpreter Error
+   ╭─[ uitest/runtime_index_non_list.dingle:1:1 ]
+   │
+ 1 │ print 1[0];
+   │          ┬  
+   │          ╰── Type error: indexing ('[...]') expects a List, but got Int.
+───╯

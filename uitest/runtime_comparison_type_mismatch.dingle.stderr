@@ -1,0 +1,7 @@
+Error: Interpreter Error
+   ╭─[ uitest/runtime_comparison_type_mismatch.dingle:1:1 ]
+   │
+ 1 │ print 1 < "a";
+   │         ┬  
+   │         ╰── Type error: Comparison '<' expects numeric operands of the same type, but got Int and String.
+───╯

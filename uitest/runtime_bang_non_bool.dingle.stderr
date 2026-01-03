@@ -1,0 +1,7 @@
+Error: Interpreter Error
+   ╭─[ uitest/runtime_bang_non_bool.dingle:1:1 ]
+   │
+ 1 │ print !1;
+   │       ┬  
+   │       ╰── Type error: '!' expects a boolean, but got Int.
+───╯

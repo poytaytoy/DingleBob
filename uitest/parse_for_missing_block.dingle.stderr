@@ -1,0 +1,7 @@
+Error: Parser Error
+   ╭─[ uitest/parse_for_missing_block.dingle:1:2 ]
+   │
+ 1 │ for (let i = 0; i < 3; i = i + 1) print i;
+   │     ───────────────────┬───────────────────  
+   │                        ╰───────────────────── Expected a block '{ ... }' after 'for (...)'.
+───╯

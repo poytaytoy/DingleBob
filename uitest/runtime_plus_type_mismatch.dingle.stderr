@@ -1,0 +1,7 @@
+Error: Interpreter Error
+   ╭─[ uitest/runtime_plus_type_mismatch.dingle:1:1 ]
+   │
+ 1 │ print 1 + "a";
+   │         ┬  
+   │         ╰── Type error: '+' expects numbers or strings, but got Int and String.
+───╯

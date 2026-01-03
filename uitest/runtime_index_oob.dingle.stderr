@@ -1,0 +1,7 @@
+Error: Interpreter Error
+   ╭─[ uitest/runtime_index_oob.dingle:1:2 ]
+   │
+ 2 │ print a[1];
+   │          ┬  
+   │          ╰── Index out of bounds: index 1 is not in [0, 1).
+───╯

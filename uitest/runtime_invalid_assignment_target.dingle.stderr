@@ -1,0 +1,7 @@
+Error: Interpreter Error
+   ╭─[ uitest/runtime_invalid_assignment_target.dingle:1:1 ]
+   │
+ 1 │ (1 + 2) = 3;
+   │         ┬  
+   │         ╰── Invalid assignment target: expected a variable or list index.
+───╯

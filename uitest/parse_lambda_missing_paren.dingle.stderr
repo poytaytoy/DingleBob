@@ -1,0 +1,7 @@
+Error: Parser Error
+   ╭─[ uitest/parse_lambda_missing_paren.dingle:1:1 ]
+   │
+ 1 │ let f = lambda x) { return x; };
+   │                ┬  
+   │                ╰── Expected '(' after 'lambda'.
+───╯

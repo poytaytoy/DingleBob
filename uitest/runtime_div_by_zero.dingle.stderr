@@ -1,0 +1,7 @@
+Error: Interpreter Error
+   ╭─[ uitest/runtime_div_by_zero.dingle:1:1 ]
+   │
+ 1 │ print 1 / 0;
+   │         ┬  
+   │         ╰── Division by zero.
+───╯

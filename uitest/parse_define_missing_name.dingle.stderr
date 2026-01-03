@@ -1,0 +1,7 @@
+Error: Parser Error
+   ╭─[ uitest/parse_define_missing_name.dingle:1:1 ]
+   │
+ 1 │ define (x) { return x; }
+   │        ┬  
+   │        ╰── Expected an identifier after 'define' (function name).
+───╯

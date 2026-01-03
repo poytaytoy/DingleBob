@@ -1,0 +1,7 @@
+Error: Interpreter Error
+   ╭─[ uitest/runtime_unary_minus_non_number.dingle:1:1 ]
+   │
+ 1 │ print -true;
+   │       ┬  
+   │       ╰── Type error: unary '-' expects a number, but got Bool.
+───╯

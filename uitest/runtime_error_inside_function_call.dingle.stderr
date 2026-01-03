@@ -1,0 +1,14 @@
+Error: Interpreter Error
+   ╭─[ uitest/runtime_error_inside_function_call.dingle:1:1 ]
+   │
+ 1 │ define boom() { return 1 / 0; }
+   │                          ┬  
+   │                          ╰── Division by zero.
+───╯
+Error: Interpreter Error
+   ╭─[ uitest/runtime_error_inside_function_call.dingle:1:2 ]
+   │
+ 2 │ boom();
+   │      ┬  
+   │      ╰── Error inside function call 'boom'
+───╯

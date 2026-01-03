@@ -1,6 +1,9 @@
 use crate::token::Token;
 use crate::token::TokenKind;
+use std::fs;
 use std::str::Chars;
+use std::thread::current;
+use ariadne::{Color, ColorGenerator, Fmt, Label, Report, ReportKind, Source};
 
 type ScanResult<T> = Result<T, String>;
 
@@ -9,34 +12,61 @@ struct Scanner<'a> {
     token_list: Vec<Token>,
     line: i32,
     token_id: i32,
-    file: String
+    file: String,
+    repl: bool
 }
 
 impl<'a> Scanner<'a> {
-    pub fn new(input: &'a str, file: String) -> Self {
+    pub fn new(input: &'a str, file: String, repl: bool) -> Self {
         Scanner {
             curr_input: input.chars(),
             token_list: Vec::new(),
             line: 1,
             token_id: 0,
-            file: file
+            file: file,
+            repl: repl
         }
     }
 
-    fn err(&self, msg: &str) -> String {
-        format!("[Line {}] Scanner Error: {}", self.line, msg)
+    fn err(&self, msg: &str, start: usize, end:usize) -> String {
+
+        if !(self.repl){
+            let mut colors = ColorGenerator::new();
+
+            // Generate & choose some colours for each of our elements
+            let a = colors.next();
+            let b = colors.next();
+            let out = Color::Fixed(81);
+            let src = fs::read_to_string(&self.file)
+            .unwrap_or_else(|_| "<could not read source file>".to_string());
+
+            Report::build(ReportKind::Error, (&self.file, (self.line - 1) as usize ..3))
+            .with_message(format!("{}", "Scanner Error"))
+            .with_label(
+                Label::new((&self.file, start..end))
+                    .with_message(msg)
+                    .with_color(a),
+            ).finish()
+            .print((&self.file, Source::from(&src)))
+            .unwrap();
+        }
+
+        format!("Scanner Error: {}", msg)
     }
 
     fn add_token(&mut self, kind: TokenKind, lexeme: String) {
+
+        let curr_id_copy = self.token_id;
+        self.token_id += lexeme.chars().count() as i32; 
+
         self.token_list.push(Token {
             kind,
             lexeme,
             line: self.line,
-            id: self.token_id,
+            id: curr_id_copy,
+            id_end: self.token_id, 
             file: self.file.clone()
         });
-
-        self.token_id += 1;
     }
 
     fn peak(&self) -> Option<char> {
@@ -80,7 +110,7 @@ impl<'a> Scanner<'a> {
             self.add_token(TokenKind::STRING, string_content);
             Ok(())
         } else {
-            Err(self.err("Unterminated string literal: expected a closing '\"'."))
+            Err(self.err("Unterminated string literal: expected a closing '\"'.", self.token_id as usize, (self.token_id as usize) + string_content.chars().count() + 1))
         }
     }
 
@@ -168,8 +198,8 @@ impl<'a> Scanner<'a> {
                 ']' => self.add_token(TokenKind::RIGHT_SQUARE, String::from("]")),
                 '%' => self.add_token(TokenKind::PERCENT, String::from("%")),
                 '#' => self.handle_comment(),
-                ' ' | '\r' | '\t' => continue,
-                '\n' => self.line += 1,
+                ' ' | '\r' | '\t' => {self.token_id += 1},
+                '\n' => {self.line += 1; self.token_id += 1},
 
                 '=' => self.handle_equal(TokenKind::EQUAL, TokenKind::EQUAL_EQUAL, '='),
                 '!' => self.handle_equal(TokenKind::BANG, TokenKind::BANG_EQUAL, '!'),
@@ -184,7 +214,7 @@ impl<'a> Scanner<'a> {
                         return Err(self.err(&format!(
                             "Unexpected character '{}' (not valid in this language).",
                             curr_char
-                        )));
+                        ), self.token_id as usize, (self.token_id + 1)as usize));
                     }
                 }
             }
@@ -202,8 +232,8 @@ impl<'a> Scanner<'a> {
     }
 }
 
-pub fn scan(contents: &str, debug: bool, file: String) -> ScanResult<Vec<Token>> {
-    let mut scanner = Scanner::new(contents, file);
+pub fn scan(contents: &str, debug: bool, file: String, repl: bool) -> ScanResult<Vec<Token>> {
+    let mut scanner = Scanner::new(contents, file, repl);
     scanner.convert()?;
 
     if debug {

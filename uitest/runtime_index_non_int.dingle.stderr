@@ -1,0 +1,7 @@
+Error: Interpreter Error
+   ╭─[ uitest/runtime_index_non_int.dingle:1:2 ]
+   │
+ 2 │ print a[none];
+   │             ┬  
+   │             ╰── Type error: list index must be an Int, but got None.
+───╯

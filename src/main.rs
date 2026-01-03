@@ -27,35 +27,35 @@ mod resolver;
 use resolver::Resolver;
 
 fn run_source(source: &str, file: String ) {
-    let mut resolver = Resolver::new();
-    let mut interpreter = Interpreter::new(true, resolver.give_local());
+    let mut resolver = Resolver::new(false);
+    let mut interpreter = Interpreter::new(true, resolver.give_local(), false);
 
-    let token_result = scan(source, false, file);
+    let token_result = scan(source, false, file, false);
 
     if let Err(msg) = token_result{
-        eprintln!("{}", msg);
+        //eprintln!("{}", msg);
         return (); 
     }
 
-    let mut parser = Parser::new(token_result.unwrap());
+    let mut parser = Parser::new(token_result.unwrap(), false);
     let parsed_result = parser.parse();
 
     if let Err(msg) = parsed_result{
-        eprintln!("{}", msg);
+        //eprintln!("{}", msg);
         return (); 
     }
 
     let resolver_result = resolver.resolve((&parsed_result).clone().unwrap());
 
     if let Err(msg) = resolver_result{
-        eprintln!("{}", msg);
+        //eprintln!("{}", msg);
         return (); 
     }
 
     let interpreter_result = interpreter.prime_interpret(parsed_result.unwrap());
 
     if let Err(msg) = interpreter_result{
-        eprintln!("{}", msg);    
+        //eprintln!("{}", msg);    
         return (); 
     }
 }
@@ -65,25 +65,25 @@ fn run_line(source: &str, debug: bool, interpreter: &mut Interpreter, resolver: 
     let mut resolver_save = resolver.clone();
     let mut intepreter_save = interpreter.clone(resolver_save.give_local());
 
-    let token_result = scan(source, debug, String::from(""));
+    let token_result = scan(source, debug, String::from(""), true);
 
     if let Err(msg) = token_result{
-        eprintln!("{}", msg);
+        eprintln!("{}\n", msg);
         return (); 
     }
 
-    let mut parser = Parser::new(token_result.unwrap());
+    let mut parser = Parser::new(token_result.unwrap(), true);
     let parsed_result = parser.parse();
 
     if let Err(msg) = parsed_result{
-        eprintln!("{}", msg);
+        eprintln!("{}\n", msg);
         return (); 
     }
 
     let resolver_result = resolver.resolve((&parsed_result).clone().unwrap());
 
     if let Err(msg) = resolver_result{
-        eprintln!("{}", msg);
+        eprintln!("{}\n", msg);
         *resolver = resolver_save;
         return (); 
     }
@@ -91,7 +91,7 @@ fn run_line(source: &str, debug: bool, interpreter: &mut Interpreter, resolver: 
     let interpreter_result = interpreter.prime_interpret(parsed_result.unwrap());
 
     if let Err(msg) = interpreter_result{
-        eprintln!("{}", msg);
+        eprintln!("{}\n", msg);
         *resolver = resolver_save;
         *interpreter = intepreter_save;
 
@@ -113,8 +113,8 @@ fn repl() -> io::Result<()> {
     println!("Dinglebob Interpreter");
     println!("Type 'exit' to quit.\n");
 
-    let mut resolver = Resolver::new();
-    let mut interpreter = Interpreter::new(true, resolver.give_local());
+    let mut resolver = Resolver::new(true);
+    let mut interpreter = Interpreter::new(true, resolver.give_local(), true);
 
     loop {
         let mut input = String::new();

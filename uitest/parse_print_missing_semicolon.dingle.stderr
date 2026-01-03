@@ -1,0 +1,7 @@
+Error: Parser Error
+   ╭─[ uitest/parse_print_missing_semicolon.dingle:1:2 ]
+   │
+ 1 │ print 123
+   │       ──┬─  
+   │         ╰─── Expected ';' after expression in 'print' statement.
+───╯

@@ -1,0 +1,7 @@
+Error: Scanner Error
+   ╭─[ uitest/scan_unexpected_char.dingle:1:1 ]
+   │
+ 1 │ @
+   │ ┬  
+   │ ╰── Unexpected character '@' (not valid in this language).
+───╯

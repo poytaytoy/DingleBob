@@ -1,0 +1,7 @@
+Error: Interpreter Error
+   ╭─[ uitest/runtime_call_non_function.dingle:1:2 ]
+   │
+ 2 │ x();
+   │   ┬  
+   │   ╰── Type error: expected a function to call, but got Int.
+───╯

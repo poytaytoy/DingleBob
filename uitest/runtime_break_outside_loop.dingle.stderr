@@ -1,0 +1,7 @@
+Error: Interpreter Error
+   ╭─[ uitest/runtime_break_outside_loop.dingle:1:1 ]
+   │
+ 1 │ break;
+   │ ──┬──  
+   │   ╰──── 'break' can only be used inside a loop body.
+───╯

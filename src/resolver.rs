@@ -1,26 +1,38 @@
-use crate::{ast::{Expression, Statement, Value}, interpreter::Interpreter, token::Token}; 
-use std::{cell::RefCell, collections::{HashMap, VecDeque}, hash::Hash, rc::Rc}; 
+use crate::{
+    ast::{Expression, Statement, Value},
+    token::Token,
+};
+use std::{
+    cell::RefCell,
+    collections::{HashMap, VecDeque},
+    rc::Rc,
+};
+
+use ariadne::{ColorGenerator, Label, Report, ReportKind, Source};
+use std::fs;
 
 type ResolveResult<T> = Result<T, String>;
 
 pub struct Resolver {
     pub locals: Rc<RefCell<HashMap<Token, i32>>>,
     pub stack: VecDeque<HashMap<String, bool>>,
+    pub repl: bool,
 }
 
-impl Resolver{
-
-    pub fn clone(&mut self) -> Self{
-        Resolver{ 
-            locals:  Rc::new(RefCell::new(self.locals.borrow().clone())), 
-            stack: self.stack.clone()
+impl Resolver {
+    pub fn clone(&mut self) -> Self {
+        Resolver {
+            locals: Rc::new(RefCell::new(self.locals.borrow().clone())),
+            stack: self.stack.clone(),
+            repl: self.repl,
         }
     }
 
-    pub fn new() -> Self {
+    pub fn new(repl: bool) -> Self {
         Resolver {
             locals: Rc::new(RefCell::new(HashMap::new())),
             stack: VecDeque::new(),
+            repl,
         }
     }
 
@@ -46,14 +58,24 @@ impl Resolver{
         }
     }
 
-    fn resolve_if(&mut self, exp: Expression, then_s: Statement, else_s: Statement) -> ResolveResult<()> {
+    fn resolve_if(
+        &mut self,
+        exp: Expression,
+        then_s: Statement,
+        else_s: Statement,
+    ) -> ResolveResult<()> {
         self.resolve_exp(exp)?;
         self.resolve_stmt(then_s)?;
         self.resolve_stmt(else_s)?;
         Ok(())
     }
 
-    fn resolve_function(&mut self, name: Token, params: Vec<Token>, body: Vec<Statement>) -> ResolveResult<()> {
+    fn resolve_function(
+        &mut self,
+        name: Token,
+        params: Vec<Token>,
+        body: Vec<Statement>,
+    ) -> ResolveResult<()> {
         if !self.stack.is_empty() {
             self.stack[0].insert(name.lexeme, true);
 
@@ -82,10 +104,12 @@ impl Resolver{
 
         if !self.stack.is_empty() {
             if self.stack[0].contains_key(&var.lexeme) {
-                // Pass the whole 'var' token instead of just var.line
                 return self.handle_error(
-                    &format!("Duplicate definition: '{}' is already defined in this scope.", &var.lexeme),
-                    &var, 
+                    &format!(
+                        "Duplicate definition: '{}' is already defined in this scope.",
+                        &var.lexeme
+                    ),
+                    &var,
                 );
             }
             self.stack[0].insert(var.lexeme.clone(), true);
@@ -131,7 +155,12 @@ impl Resolver{
         }
     }
 
-    fn resolve_assign(&mut self, assignee: Expression, _equal: Token, value: Expression) -> ResolveResult<()> {
+    fn resolve_assign(
+        &mut self,
+        assignee: Expression,
+        _equal: Token,
+        value: Expression,
+    ) -> ResolveResult<()> {
         self.resolve_exp(assignee)?;
         self.resolve_exp(value)?;
         Ok(())
@@ -216,17 +245,43 @@ impl Resolver{
     fn begin_scope(&mut self) {
         self.stack.push_front(HashMap::new());
     }
-    
+
     fn end_scope(&mut self) {
-        self.stack.pop_front(); 
+        self.stack.pop_front();
     }
 
-    pub fn give_local(&self) -> Rc<RefCell<HashMap<Token, i32>>>{
+    pub fn give_local(&self) -> Rc<RefCell<HashMap<Token, i32>>> {
         Rc::clone(&self.locals)
     }
 
     fn handle_error<T>(&self, msg: &str, token: &Token) -> ResolveResult<T> {
-        // Now using the token's metadata directly
-        Err(format!("[{}: Line {}] Semantic Error at '{}': {}", token.file, token.line, token.lexeme, msg))
+        if !self.repl {
+            let line = token.line;
+            let file = token.file.clone();
+            let start = token.id as usize;
+            let end = token.id_end as usize;
+
+            let mut colors = ColorGenerator::new();
+            let a = colors.next();
+
+            let src = fs::read_to_string(&file)
+                .unwrap_or_else(|_| "<could not read source file>".to_string());
+
+            Report::build(ReportKind::Error, (&file, (line.saturating_sub(1)) as usize..3))
+                .with_message("Resolver Error")
+                .with_label(
+                    Label::new((&file, start..end))
+                        .with_message(msg)
+                        .with_color(a),
+                )
+                .finish()
+                .print((&file, Source::from(&src)))
+                .unwrap();
+        }
+
+        Err(format!(
+            "Semantic Error at '{}': {}",
+            token.lexeme, msg
+        ))
     }
 }

@@ -1,0 +1,7 @@
+Error: Parser Error
+   ╭─[ uitest/parse_for_missing_paren.dingle:1:1 ]
+   │
+ 1 │ for let i = 0; i < 3; i = i + 1 { print i; }
+   │     ─┬─  
+   │      ╰─── Expected '(' after 'for'.
+───╯

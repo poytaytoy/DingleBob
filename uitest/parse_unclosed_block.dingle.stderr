@@ -1,0 +1,7 @@
+Error: Parser Error
+   ╭─[ uitest/parse_unclosed_block.dingle:1:2 ]
+   │
+ 1 │ if (true) { print 1;
+   │           ─────┬─────  
+   │                ╰─────── Expected '}' to close block.
+───╯

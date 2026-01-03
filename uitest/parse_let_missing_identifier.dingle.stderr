@@ -1,0 +1,7 @@
+Error: Parser Error
+   ╭─[ uitest/parse_let_missing_identifier.dingle:1:1 ]
+   │
+ 1 │ let = 3;
+   │     ┬  
+   │     ╰── Expected an identifier after 'let' (variable name).
+───╯
