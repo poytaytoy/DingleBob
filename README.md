@@ -17,6 +17,8 @@ Dinglebob is a small, dynamically-typed interpreted language I wrote in Rust tha
 
 I recommend skimming the syntax guide [here](SYNTAX.md) -> especially the sections on **lists** and **closures**.
 
+If you are interested in it's how the error ui is handled, check out the uitest folder! 
+
 ---
 
 ## Running
