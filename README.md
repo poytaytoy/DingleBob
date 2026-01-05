@@ -178,7 +178,7 @@ my_acc("withdraw")(200);
 
 ---
 
-### Y-Combinator
+### Z-Combinator
 
 Dinglebob evaluates in applicative order, so if you *really* want recursion for lambdas, you can use the Z-combinator (also in `examples/zcombinator.dingle`):
 
@@ -206,4 +206,4 @@ print fact(5); # 120
 
 ---
 
-And yeah, that’s basically Dinglebob. There isn’t much practical uses -> it's just for me to learn more about programming languages. 
+That's it. Thanks for getting this far :D 
