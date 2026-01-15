@@ -23,6 +23,8 @@ If you are interested in it's how the error ui is handled, check out the uitest 
 
 ## Running
 
+You could also use the playground here https://dinglebob-playground.onrender.com/ to test out the language. 
+
 ### Build a binary
 
 From the Rust project root:
