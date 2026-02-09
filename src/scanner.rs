@@ -1,9 +1,9 @@
 use crate::token::Token;
 use crate::token::TokenKind;
+use ariadne::{Color, ColorGenerator, Fmt, Label, Report, ReportKind, Source};
 use std::fs;
 use std::str::Chars;
 use std::thread::current;
-use ariadne::{Color, ColorGenerator, Fmt, Label, Report, ReportKind, Source};
 
 type ScanResult<T> = Result<T, String>;
 
@@ -13,7 +13,7 @@ struct Scanner<'a> {
     line: i32,
     token_id: i32,
     file: String,
-    repl: bool
+    repl: bool,
 }
 
 impl<'a> Scanner<'a> {
@@ -24,13 +24,12 @@ impl<'a> Scanner<'a> {
             line: 1,
             token_id: 0,
             file: file,
-            repl: repl
+            repl: repl,
         }
     }
 
-    fn err(&self, msg: &str, start: usize, end:usize) -> String {
-
-        if !(self.repl){
+    fn err(&self, msg: &str, start: usize, end: usize) -> String {
+        if !(self.repl) {
             let mut colors = ColorGenerator::new();
 
             // Generate & choose some colours for each of our elements
@@ -38,34 +37,34 @@ impl<'a> Scanner<'a> {
             let b = colors.next();
             let out = Color::Fixed(81);
             let src = fs::read_to_string(&self.file)
-            .unwrap_or_else(|_| "<could not read source file>".to_string());
+                .unwrap_or_else(|_| "<could not read source file>".to_string());
 
-            Report::build(ReportKind::Error, (&self.file, (self.line - 1) as usize ..3))
-            .with_message(format!("{}", "Scanner Error"))
-            .with_label(
-                Label::new((&self.file, start..end))
-                    .with_message(msg)
-                    .with_color(a),
-            ).finish()
-            .print((&self.file, Source::from(&src)))
-            .unwrap();
+            Report::build(ReportKind::Error, (&self.file, (self.line - 1) as usize..3))
+                .with_message(format!("{}", "Scanner Error"))
+                .with_label(
+                    Label::new((&self.file, start..end))
+                        .with_message(msg)
+                        .with_color(a),
+                )
+                .finish()
+                .print((&self.file, Source::from(&src)))
+                .unwrap();
         }
 
         format!("Scanner Error: {}", msg)
     }
 
     fn add_token(&mut self, kind: TokenKind, lexeme: String) {
-
         let curr_id_copy = self.token_id;
-        self.token_id += lexeme.chars().count() as i32; 
+        self.token_id += lexeme.chars().count() as i32;
 
         self.token_list.push(Token {
             kind,
             lexeme,
             line: self.line,
             id: curr_id_copy,
-            id_end: self.token_id, 
-            file: self.file.clone()
+            id_end: self.token_id,
+            file: self.file.clone(),
         });
     }
 
@@ -110,7 +109,11 @@ impl<'a> Scanner<'a> {
             self.add_token(TokenKind::STRING, string_content);
             Ok(())
         } else {
-            Err(self.err("Unterminated string literal: expected a closing '\"'.", self.token_id as usize, (self.token_id as usize) + string_content.chars().count() + 1))
+            Err(self.err(
+                "Unterminated string literal: expected a closing '\"'.",
+                self.token_id as usize,
+                (self.token_id as usize) + string_content.chars().count() + 1,
+            ))
         }
     }
 
@@ -151,8 +154,11 @@ impl<'a> Scanner<'a> {
     }
 
     fn handle_comment(&mut self) {
+        self.token_id += 1; // Identify the '#'
+
         while let Some(c) = self.peak() {
             self.curr_input.next();
+            self.token_id += 1;
             if c == '\n' {
                 self.line += 1;
                 break;
@@ -199,8 +205,11 @@ impl<'a> Scanner<'a> {
                 ']' => self.add_token(TokenKind::RIGHT_SQUARE, String::from("]")),
                 '%' => self.add_token(TokenKind::PERCENT, String::from("%")),
                 '#' => self.handle_comment(),
-                ' ' | '\r' | '\t' => {self.token_id += 1},
-                '\n' => {self.line += 1; self.token_id += 1},
+                ' ' | '\r' | '\t' => self.token_id += 1,
+                '\n' => {
+                    self.line += 1;
+                    self.token_id += 1
+                }
 
                 '=' => self.handle_equal(TokenKind::EQUAL, TokenKind::EQUAL_EQUAL, '='),
                 '!' => self.handle_equal(TokenKind::BANG, TokenKind::BANG_EQUAL, '!'),
@@ -212,10 +221,14 @@ impl<'a> Scanner<'a> {
                     if curr_char.is_alphabetic() || curr_char == '_' {
                         self.handle_identifier(curr_char);
                     } else {
-                        return Err(self.err(&format!(
-                            "Unexpected character '{}' (not valid in this language).",
-                            curr_char
-                        ), self.token_id as usize, (self.token_id + 1)as usize));
+                        return Err(self.err(
+                            &format!(
+                                "Unexpected character '{}' (not valid in this language).",
+                                curr_char
+                            ),
+                            self.token_id as usize,
+                            (self.token_id + 1) as usize,
+                        ));
                     }
                 }
             }
