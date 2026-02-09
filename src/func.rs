@@ -15,8 +15,10 @@ use std::fs;
 use std::io::LineWriter;
 use std::process::Command;
 
+use std::env;
 use std::rc::Rc;
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::thread;
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 pub trait Func {
     fn isDefault(&self) -> bool;
@@ -546,5 +548,73 @@ impl Func for Write {
                 path, e
             ))),
         }
+    }
+}
+
+pub struct Getenv;
+
+impl Func for Getenv {
+    fn isDefault(&self) -> bool {
+        true
+    }
+    fn toString(&self) -> String {
+        String::from("getenv")
+    }
+    fn call(
+        &self,
+        _interpreter: Interpreter,
+        input_args: Vec<Value>,
+    ) -> Result<Value, BreakResult> {
+        if input_args.len() != 1 {
+            return Err(BreakResult::Error(format!(
+                "Arity error: 'getenv' takes 1 argument, got {}.",
+                input_args.len()
+            )));
+        }
+        let Value::String(key) = self.expect(input_args[0].clone(), "String")? else {
+            unreachable!()
+        };
+
+        match env::var(&key) {
+            Ok(val) => Ok(Value::String(val)),
+            Err(_) => Ok(Value::None),
+        }
+    }
+}
+
+pub struct Sleep;
+
+impl Func for Sleep {
+    fn isDefault(&self) -> bool {
+        true
+    }
+    fn toString(&self) -> String {
+        String::from("sleep")
+    }
+    fn call(
+        &self,
+        _interpreter: Interpreter,
+        input_args: Vec<Value>,
+    ) -> Result<Value, BreakResult> {
+        if input_args.len() != 1 {
+            return Err(BreakResult::Error(format!(
+                "Arity error: 'sleep' takes 1 argument (ms), got {}.",
+                input_args.len()
+            )));
+        }
+
+        let ms = match input_args[0] {
+            Value::Int(n) => n as u64,
+            Value::Float(f) => f as u64,
+            _ => {
+                return Err(BreakResult::Error(format!(
+                    "Type error: 'sleep' expects Int or Float (ms), got {:?}.",
+                    input_args[0]
+                )))
+            }
+        };
+
+        thread::sleep(Duration::from_millis(ms));
+        Ok(Value::None)
     }
 }

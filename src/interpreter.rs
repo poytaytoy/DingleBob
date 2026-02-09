@@ -59,6 +59,8 @@ impl Interpreter {
         define("import", Box::new(Import {}));
         define("read", Box::new(Read {}));
         define("write", Box::new(Write {}));
+        define("getenv", Box::new(Getenv {}));
+        define("sleep", Box::new(Sleep {}));
 
 
         Interpreter {
