@@ -33,7 +33,7 @@ fn run_source(source: &str, file: String ) {
     let token_result = scan(source, false, file, false);
 
     if let Err(msg) = token_result{
-        //eprintln!("{}", msg);
+        eprintln!("{}", msg);
         return (); 
     }
 
@@ -41,21 +41,21 @@ fn run_source(source: &str, file: String ) {
     let parsed_result = parser.parse();
 
     if let Err(msg) = parsed_result{
-        //eprintln!("{}", msg);
+        eprintln!("{}", msg);
         return (); 
     }
 
     let resolver_result = resolver.resolve((&parsed_result).clone().unwrap());
 
     if let Err(msg) = resolver_result{
-        //eprintln!("{}", msg);
+        eprintln!("{}", msg);
         return (); 
     }
 
     let interpreter_result = interpreter.prime_interpret(parsed_result.unwrap());
 
     if let Err(msg) = interpreter_result{
-        //eprintln!("{}", msg);    
+        eprintln!("{}", msg);    
         return (); 
     }
 }

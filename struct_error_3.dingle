@@ -1,0 +1,2 @@
+let p = "not an instance";
+print p.x;

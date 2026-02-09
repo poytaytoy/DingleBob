@@ -54,8 +54,16 @@ impl Resolver {
             Statement::Block(statements) => self.resolve_block(*statements),
             Statement::While(exp, s) => self.resolve_while(exp, *s),
             Statement::Break(t) => self.resolve_break(t),
+            Statement::Struct(name, fields) => self.resolve_struct(name, fields),
             _ => unreachable!(),
         }
+    }
+
+    fn resolve_struct(&mut self, name: Token, _fields: Vec<Token>) -> ResolveResult<()> {
+        if !self.stack.is_empty() {
+            self.stack[0].insert(name.lexeme, true);
+        }
+        Ok(())
     }
 
     fn resolve_if(
@@ -152,7 +160,18 @@ impl Resolver {
             Expression::Lambda(t, stmt) => self.resolve_lambda(t, *stmt),
             Expression::Index(l, t, i) => self.resolve_index(*l, t, *i),
             Expression::List(content, t) => self.resolve_list(*content, t),
+            Expression::Get(object, _name) => self.resolve_get(*object),
+            Expression::Set(object, _name, value) => self.resolve_set(*object, *value)
         }
+    }
+
+    fn resolve_get(&mut self, object: Expression) -> ResolveResult<()> {
+        self.resolve_exp(object)
+    }
+
+    fn resolve_set(&mut self, object: Expression, value: Expression) -> ResolveResult<()> {
+        self.resolve_exp(value)?;
+        self.resolve_exp(object)
     }
 
     fn resolve_assign(

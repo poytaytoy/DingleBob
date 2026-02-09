@@ -66,6 +66,7 @@ impl Parser {
         match currentToken.kind {
             TokenKind::LET => return self.varDeclaration(),
             TokenKind::DEFINE => return self.function(),
+            TokenKind::STRUCT => return self.structDeclaration(),
             _ => { self.curr_index -= 1; }
         }
 
@@ -155,6 +156,46 @@ impl Parser {
         let Statement::Block(statements) = self.block()? else { unreachable!() };
 
         Ok(Statement::Function(name, args_list, statements))
+    }
+
+    fn structDeclaration(&mut self) -> ParseResult<Statement> {
+        let start_error = self.tokens_list[self.curr_index].id as usize;
+        
+        if !self.check(TokenKind::IDENTIFIER) {
+            return self.err_from(start_error, "Expected an identifier after 'struct' (struct name).");
+        }
+
+        let name = (&self.tokens_list[self.curr_index]).clone();
+        self.curr_index += 1;
+
+        if !self.check(TokenKind::LEFT_BRACE) {
+            return self.err_from(start_error, "Expected '{' before struct body."); 
+        }
+
+        self.curr_index += 1;
+
+        let mut fields: Vec<Token> = Vec::new();
+
+        while !self.check(TokenKind::RIGHT_BRACE) && !self.atEnd() {
+            if self.check(TokenKind::IDENTIFIER) {
+                fields.push((&self.tokens_list[self.curr_index]).clone());
+                self.curr_index += 1;
+            } else {
+                return self.err_from(start_error, "Expected field identifier in struct body.");
+            }
+
+            if !self.check(TokenKind::COMMA) {
+                break;
+            }
+            self.curr_index += 1;
+        }
+
+        if !self.check(TokenKind::RIGHT_BRACE) {
+            return self.err_from(start_error, "Expected '}' after struct body.");
+        }
+        self.curr_index += 1;
+
+        Ok(Statement::Struct(name, fields))
     }
 
     fn statement(&mut self) -> ParseResult<Statement> {
@@ -363,8 +404,17 @@ impl Parser {
         if self.check(TokenKind::EQUAL) {
             let equal_store = (&self.tokens_list[self.curr_index]).clone();
             self.curr_index += 1;
-            let value = self.expression()?;
-            return Ok(Expression::Assign(Box::new(expr), equal_store, Box::new(value)));
+            let value = self.expression()?; // Recursive call
+
+            if let Expression::Variable(name) = expr {
+                return Ok(Expression::Assign(Box::new(Expression::Variable(name)), equal_store, Box::new(value)));
+            } else if let Expression::Get(object, name) = expr {
+                 return Ok(Expression::Set(object, name, Box::new(value)));
+            } else if let Expression::Index(l, t, i) = expr {
+                 return Ok(Expression::Assign(Box::new(Expression::Index(l,t,i)), equal_store, Box::new(value)));
+            }
+            
+            return self.err_from(self.tokens_list[self.curr_index - 1].id as usize, "Invalid assignment target.");
         }
 
         Ok(expr)
@@ -463,37 +513,51 @@ impl Parser {
     fn call(&mut self) -> ParseResult<Expression> {
         let start_error = self.tokens_list[self.curr_index].id as usize;
 
-        let mut expr = self.index()?;
+        let mut expr = self.primary()?;
 
         loop {
-            if !self.check(TokenKind::LEFT_PAREN) {
-                break;
-            }
+            if self.check(TokenKind::LEFT_PAREN) {
+                self.curr_index += 1;
+                let mut args_list: Vec<Expression> = Vec::new();
 
-            let mut args_list: Vec<Expression> = Vec::new();
-            self.curr_index += 1;
-
-            if !self.check(TokenKind::RIGHT_PAREN) {
-                args_list.push(self.expression()?);
-
-                while self.check(TokenKind::COMMA) {
-                    self.curr_index += 1;
+                if !self.check(TokenKind::RIGHT_PAREN) {
                     args_list.push(self.expression()?);
+                    while self.check(TokenKind::COMMA) {
+                        self.curr_index += 1;
+                        args_list.push(self.expression()?);
+                    }
                 }
-            }
 
-            if self.check(TokenKind::RIGHT_PAREN) {
-                if args_list.len() > 255 {
-                    return self.err_from(start_error, "Too many arguments: function calls can have at most 255 arguments.");
+                if !self.check(TokenKind::RIGHT_PAREN) {
+                    return self.err_from(start_error, "Expected ')' after arguments.");
                 }
+                self.curr_index += 1;
+
                 expr = Expression::Call(
                     Box::new(expr),
-                    (&self.tokens_list[self.curr_index]).clone(),
+                    (&self.tokens_list[self.curr_index - 1]).clone(),
                     Box::new(args_list),
                 );
+            } else if self.check(TokenKind::DOT) {
                 self.curr_index += 1;
+                let name = if self.check(TokenKind::IDENTIFIER) {
+                    (&self.tokens_list[self.curr_index]).clone()
+                } else {
+                    return self.err_from(start_error, "Expected property name after '.'.");
+                };
+                self.curr_index += 1;
+                expr = Expression::Get(Box::new(expr), name);
+            } else if self.check(TokenKind::LEFT_SQUARE) {
+                self.curr_index += 1;
+                let right_expr = self.expression()?;
+                if !self.check(TokenKind::RIGHT_SQUARE) {
+                    return self.err_from(start_error, "Expected ']' after index.");
+                }
+                let right_brace = (&self.tokens_list[self.curr_index]).clone();
+                self.curr_index += 1;
+                expr = Expression::Index(Box::new(expr), right_brace, Box::new(right_expr));
             } else {
-                return self.err_from(start_error, "Expected ')' after argument list.");
+                break;
             }
         }
 
@@ -501,25 +565,7 @@ impl Parser {
     }
 
     fn index(&mut self) -> ParseResult<Expression> {
-        let start_error = self.tokens_list[self.curr_index].id as usize;
-
-        let left_expr = self.primary()?;
-
-        if self.check(TokenKind::LEFT_SQUARE) {
-            self.curr_index += 1;
-            let right_expr = self.expression()?;
-
-            if !self.check(TokenKind::RIGHT_SQUARE) {
-                return self.err_from(start_error, "Expected ']' to close index expression.");
-            }
-
-            let right_brace_store = (&self.tokens_list[self.curr_index]).clone();
-            self.curr_index += 1;
-
-            return Ok(Expression::Index(Box::new(left_expr), right_brace_store, Box::new(right_expr)));
-        }
-
-        Ok(left_expr)
+         self.call()
     }
 
     fn primary(&mut self) -> ParseResult<Expression> {
@@ -585,10 +631,10 @@ impl Parser {
 
         let mut args_list: Vec<Token> = Vec::new();
 
-        loop {
-            if !self.check(TokenKind::RIGHT_PAREN) {
+        if !self.check(TokenKind::RIGHT_PAREN) {
+            loop {
                 if !self.check(TokenKind::IDENTIFIER) {
-                    return self.err_from(start_error, "Expected an identifier as a parameter name in lambda expression.");
+                     return self.err_from(start_error, "Expected an identifier as a parameter name in lambda expression.");
                 }
 
                 args_list.push((&self.tokens_list[self.curr_index]).clone());
@@ -599,8 +645,6 @@ impl Parser {
                 }
 
                 self.curr_index += 1;
-            } else {
-                break;
             }
         }
 
@@ -693,4 +737,5 @@ impl Parser {
 
         Err(format!("Parser Error: {}", msg))
     }
+
 }

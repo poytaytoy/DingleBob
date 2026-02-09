@@ -14,6 +14,7 @@ use std::fs;
 use std::io::LineWriter;
 use std::rc::Rc;
 use std::time::{SystemTime, UNIX_EPOCH};
+use crate::environment::Environment;
 
 
 pub trait Func { 
@@ -394,4 +395,36 @@ impl Func for Lambda {
         }
     }
     
+}
+
+pub struct Struct {
+    pub name: Token,
+    pub fields: Vec<Token>
+}
+
+impl Func for Struct {
+    fn isDefault(&self) -> bool {
+        false
+    }
+    fn toString(&self) -> String {
+        self.name.lexeme.clone()
+    }
+    fn call(&self, interpreter: Interpreter, input_args: Vec<Value>) -> Result<Value, BreakResult> {
+        if input_args.len() != self.fields.len() {
+             return Err(BreakResult::Error(format!(
+                "Arity error: Struct '{}' expects {} argument(s), but got {}.",
+                self.name.lexeme,
+                self.fields.len(),
+                input_args.len()
+            )));
+        }
+
+        let mut instance_env = Environment::new(None, interpreter.repl);
+        
+        for (i, token) in self.fields.iter().enumerate() {
+            instance_env.define(token.clone(), input_args[i].clone());
+        }
+
+        Ok(Value::Instance(Rc::new(RefCell::new(instance_env))))
+    }
 }

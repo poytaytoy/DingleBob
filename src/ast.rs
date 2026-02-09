@@ -21,7 +21,9 @@ pub enum Expression {
     Variable(Token),
     List(Box<Vec<Expression>>, Token),
     Lambda(Vec<Token>, Box<Vec<Statement>>), 
-    Index(Box<Expression>, Token,  Box<Expression>)
+    Index(Box<Expression>, Token,  Box<Expression>),
+    Get(Box<Expression>, Token),
+    Set(Box<Expression>, Token, Box<Expression>)
 }
 
 #[derive(Clone)]
@@ -34,6 +36,7 @@ pub enum Value
     Bool(bool),
     Call(Rc<dyn Func>, Rc<RefCell<Environment>>),
     List(Rc<RefCell<Vec<Value>>>),
+    Instance(Rc<RefCell<Environment>>),
     None
 }
 
@@ -46,6 +49,7 @@ impl Debug for Value {
             Value::Bool(b) => f.debug_tuple("Bool").field(b).finish(),
             Value::Call(callee, env) => write!(f, "{}", format!("Call(<{}>)", callee.toString())),
             Value::List(lst) => f.debug_tuple("List").field(lst).finish(),
+            Value::Instance(_) => write!(f, "Instance"),
             Value::None => write!(f, "None"),
         }
     }
@@ -57,6 +61,7 @@ pub enum Statement {
     Var(Token, Expression),
     Expression(Expression), 
     Function(Token, Vec<Token>, Box<Vec<Statement>>),
+    Struct(Token, Vec<Token>),
     If(Expression, Box<Statement>, Box<Statement>), //For the case of no else, just set to some useless expression. 
     Print(Expression),
     Return(Token, Expression),

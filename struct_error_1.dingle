@@ -1,0 +1,3 @@
+struct Point { x, y }
+#Expect Arity Error: expects 2 arguments, got 1
+let p = Point(1); 

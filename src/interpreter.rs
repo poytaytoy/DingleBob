@@ -76,6 +76,7 @@ impl Interpreter {
             Value::None => "None".to_string(),
             Value::List(_) => "List".to_string(),
             Value::Call(_, _) => "Function".to_string(),
+            Value::Instance(_) => "Instance".to_string(),
         }
     }
 
@@ -122,8 +123,16 @@ impl Interpreter {
             Statement::Block(statements) => self.execute_block(*statements),
             Statement::While(exp, s) => self.execute_while(exp, *s),
             Statement::Break(t) => self.execute_break(t),
+            Statement::Struct(name, fields) => self.execute_struct(name, fields),
             _ => unreachable!()
         }
+    }
+
+    fn execute_struct(&mut self, name: Token, fields: Vec<Token>) -> Result<Value, BreakResult> {
+        let name_clone = name.clone();
+        let struct_class = Struct { name, fields };
+        self.global_environment.borrow_mut().define(name_clone, Value::Call(Rc::new(struct_class), Rc::clone(&self.global_environment))); 
+        Ok(Value::None)
     }
 
     fn to_bool(&self, val: &Value) -> bool {
@@ -162,7 +171,8 @@ impl Interpreter {
             Value::None => println!("none"),
             Value::String(m) => println!("{}", m),
             Value::Call(callee, _) => println!("<fn {}>", callee.toString()),
-            Value::List(vec) => println!("{:?}", vec.borrow_mut())
+            Value::List(vec) => println!("{:?}", vec.borrow_mut()),
+            Value::Instance(_) => println!("<instance>")
         }
         Ok(Value::None)
     }
@@ -224,8 +234,48 @@ impl Interpreter {
             Expression::Variable(t) => self.evaluate_variable(t),
             Expression::Lambda(args, stmt ) => self.evaluate_lambda(args, *stmt),
             Expression::Index(ls, rb, i) => self.evaluate_index(*ls, rb, *i),
-            Expression::List(content, t) => self.evaluate_list(*content, t)
+            Expression::Lambda(args, stmt ) => self.evaluate_lambda(args, *stmt),
+            Expression::Index(ls, rb, i) => self.evaluate_index(*ls, rb, *i),
+            Expression::List(content, t) => self.evaluate_list(*content, t),
+            Expression::Get(object, name) => self.evaluate_get(*object, name),
+            Expression::Set(object, name, value) => self.evaluate_set(*object, name, *value)
         }
+    }
+
+    fn evaluate_get(&mut self, object: Expression, name: Token) -> Result<Value, BreakResult> {
+        let obj_val = self.evaluate(object)?;
+
+        if let Value::Instance(env) = obj_val {
+            match env.borrow().get(name.clone()) {
+                Ok(v) => return Ok(v),
+                Err(_) => {
+                     return Err(self.handle_error(
+                        &format!("Undefined property '{}'.", name.lexeme),
+                        name
+                    ));
+                }
+            }
+        }
+
+        Err(self.handle_error(
+            "Only instances have properties.",
+            name
+        ))
+    }
+
+    fn evaluate_set(&mut self, object: Expression, name: Token, value: Expression) -> Result<Value, BreakResult> {
+        let obj_val = self.evaluate(object)?;
+
+        if let Value::Instance(env) = obj_val {
+            let val = self.evaluate(value)?;
+            env.borrow_mut().assign(name, val.clone())?; 
+            return Ok(val);
+        }
+
+        Err(self.handle_error(
+            "Only instances have fields.",
+            name
+        ))
     }
     
     fn evaluate_assign(&mut self, i: Expression, eq: Token, a: Expression) -> Result<Value, BreakResult> {
@@ -492,7 +542,8 @@ impl Interpreter {
             ));
         }
 
-        Ok(ls.borrow()[index as usize].clone())
+        let item = ls.borrow()[index as usize].clone();
+        Ok(item)
     }
 
     fn evaluate_list(&mut self, content: Vec<Expression>, _t: Token) -> Result<Value, BreakResult> {

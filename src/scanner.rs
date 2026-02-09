@@ -143,6 +143,7 @@ impl<'a> Scanner<'a> {
             "define" => TokenKind::DEFINE,
             "break" => TokenKind::BREAK,
             "lambda" => TokenKind::LAMBDA,
+            "struct" => TokenKind::STRUCT,
             _ => TokenKind::IDENTIFIER,
         };
 
