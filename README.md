@@ -118,72 +118,53 @@ print quick_sort([10, -1, 2, 5, 0, 9, 3]);
 
 ---
 
-### Structs and Classes (kinda)
+### Structs and Classes
 
-Structs/classes aren’t implemented, but you can fake them thanks to closures capturing scope.
+Dinglebob now has first-class support for structs!
 
-**Struct-like (also in `examples/structs.dingle`)**:
+**Defining a Struct:**
 
 ```js
-define person(name, age) {
-    return lambda(msg) {
-        if msg == "name" { return name; }
-        if msg == "age"  { return age; }
-    };
+struct Point {
+    x,
+    y
 }
-
-let p = person("Alice", 20);
-
-print p("name"); # Alice
-print p("age");  # 20
 ```
 
-**Class-like (also in `examples/class.dingle`)**:
+**Instantiating:**
 
 ```js
-define BankAccount(owner, initial_balance) {
-    let balance = initial_balance;
-    let transactions = [];
+let p = Point(10, 20);
+```
 
-    let deposit = lambda(amount) {
-        balance = balance + amount;
-        append(transactions, "Deposit: " + amount);
-        return balance;
-    };
+**Accessing Fields:**
 
-    let withdraw = lambda(amount) {
-        if amount > balance {
-            print "Insufficient funds for " + owner;
-            return none;
-        }
-        balance = balance - amount;
-        append(transactions, "Withdraw: " + amount);
-        return balance;
-    };
-
-    return lambda(message) {
-        if message == "balance" { return balance; }
-        if message == "owner"   { return owner; }
-        if message == "deposit" { return deposit; }
-        if message == "withdraw" { return withdraw; }
-        if message == "history" { return copy(transactions); } 
-
-        print "Method not found: " + message;
-    };
-}
-
-let my_acc = BankAccount("poytaytoy", 1000);
-
-my_acc("deposit")(500);
-my_acc("withdraw")(200);
+```js
+print p.x; # 10
+p.y = 30;
+print p.y; # 30
 ```
 
 ---
 
+### System Functions
+
+Dinglebob includes built-in functions for system interaction:
+
+*   **File I/O**:
+    *   `read(path)`: Returns the content of the file at `path` as a string.
+    *   `write(path, content)`: Writes `content` to the file at `path`.
+*   **Environment**:
+    *   `getenv(key)`: Returns the value of the environment variable `key`, or `none`.
+*   **Time**:
+    *   `sleep(ms)`: Pauses execution for `ms` milliseconds.
+
+---
+
 ### Z-Combinator
-
+ 
 Dinglebob evaluates in applicative order, so if you *really* want recursion for lambdas, you can use the Z-combinator (also in `examples/zcombinator.dingle`):
-
+ 
 ```js
 let Y = lambda(f) {
     let g = lambda(x) {
@@ -193,19 +174,19 @@ let Y = lambda(f) {
     };
     return g(g);
 };
-
+ 
 let factorial_gen = lambda(rec) {
     return lambda(n) {
         if n == 0 { return 1; }
         return n * rec(n - 1);
     };
 };
-
+ 
 let fact = Y(factorial_gen);
-
+ 
 print fact(5); # 120
 ```
-
+ 
 ---
-
-That's it. Thanks for getting this far :D 
+ 
+That's it. Thanks for getting this far :D

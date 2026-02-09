@@ -432,38 +432,68 @@ Dinglebob has 4 main pipeline errors
 
 --- 
 
+### Structs
+ 
+Define data structures:
+ 
+```js
+struct Point {
+    x,
+    y
+}
+```
+ 
+Instantiate and access:
+ 
+```js
+let p = Point(1, 2);
+p.x = 10;
+print p.y;
+```
+ 
+---
+ 
+## System Functions
+ 
+*   `read(path)`: Read file content as string.
+*   `write(path, content)`: Write string to file.
+*   `getenv(key)`: Get environment variable.
+*   `sleep(ms)`: Sleep for milliseconds.
+ 
+---
+ 
 ## Imports
-
+ 
 Dinglebob supports importing and executing another file at runtime:
-
+ 
 ```js
 import("test2.dingle");
 ```
-
+ 
 What it does: 
-
+ 
 * Reads + executes the target file.
 * Exports its top-level bindings into the current program after execution.
 * Names starting with `_` are **not exported** (treated as “private”).
-
+ 
 Example:
-
+ 
 **test2.dingle**
-
+ 
 ```js
 let x = 10;
 let _secret = 999;
-
+ 
 define inc(n) { return n + 1; }
 ```
-
+ 
 **test.dingle**
-
+ 
 ```js
 import("test2.dingle");
-
+ 
 print x;       # 10
 print inc(5);  # 6
 print _secret; # runtime error (not imported)
 ```
-
+```
