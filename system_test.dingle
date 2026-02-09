@@ -1,0 +1,9 @@
+# Test File I/O
+let test_file = "test_io.txt";
+let content = "Hello, File System!";
+print "Writing to file...";
+write(test_file, content);
+
+print "Reading from file...";
+let read_back = read(test_file);
+print read_back;

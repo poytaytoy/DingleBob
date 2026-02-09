@@ -57,6 +57,9 @@ impl Interpreter {
         define("append", Box::new(Append {}));
         define("concat", Box::new(Concat {}));
         define("import", Box::new(Import {}));
+        define("read", Box::new(Read {}));
+        define("write", Box::new(Write {}));
+
 
         Interpreter {
             global_environment: Rc::clone(&environment),
