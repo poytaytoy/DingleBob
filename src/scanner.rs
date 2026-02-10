@@ -92,7 +92,26 @@ impl<'a> Scanner<'a> {
         let mut met_end = false;
 
         while let Some(c) = self.peak() {
-            if c != '"' {
+            if c == '\\' {
+                // Handle escape sequence
+                self.curr_input.next(); // Consume '\'
+                if let Some(next_c) = self.peak() {
+                    match next_c {
+                        'n' => string_content.push('\n'),
+                        't' => string_content.push('\t'),
+                        'r' => string_content.push('\r'),
+                        '"' => string_content.push('"'),
+                        '\\' => string_content.push('\\'),
+                        _ => {
+                            string_content.push('\\');
+                            string_content.push(next_c);
+                        }
+                    }
+                    self.curr_input.next(); // Consume the escaped character
+                } else {
+                    break; // EOF after backslash
+                }
+            } else if c != '"' {
                 if c == '\n' {
                     self.line += 1;
                 }
